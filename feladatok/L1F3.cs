@@ -12,9 +12,11 @@ public static class L1F3
     private static uint program;
 
     private static readonly float length = 0.5f;
-    private static readonly float startPoint = -0.7f;
+    private static readonly float start = -0.7f;
     private static readonly float radToDeg = MathF.PI / 180;
     private static readonly float angle = 30.0f;
+    private static readonly Vector3D<float> startPoint = new Vector3D<float>(0.0f, start, 0.0f);
+
 
     private static readonly string VertexShaderSource = @"
         #version 330 core
@@ -45,7 +47,7 @@ public static class L1F3
     static void Main(string[] args)
     {
         WindowOptions windowOptions = WindowOptions.Default;
-        windowOptions.Title = "Lab01-2";
+        windowOptions.Title = "Lab01-3";
         windowOptions.Size = new Silk.NET.Maths.Vector2D<int>(1000, 1000);
 
         graphicWindow = Window.Create(windowOptions);
@@ -124,9 +126,75 @@ public static class L1F3
     {
         Gl.Clear(ClearBufferMask.ColorBufferBit);
 
+
         uint vao = Gl.GenVertexArray();
         Gl.BindVertexArray(vao);
         if (!Gl.IsVertexArray(vao))
+        {
+            throw new Exception("Failed to create vertex array object!");
+        }
+
+        float[] qubesVertexArray;
+        float[] qubesColorArray;
+        uint[] qubesIndexArray;
+        (qubesVertexArray, qubesColorArray, qubesIndexArray) = getQubes();
+
+        float[] qubesBorderVertexArray;
+        float[] qubesBorderColorArray;
+        uint[] qubesBorderIndexArray;
+
+        (qubesBorderVertexArray, qubesBorderColorArray, qubesBorderIndexArray) = getQubesBorders();
+
+        uint qubeVertices = Gl.GenBuffer();
+        Gl.BindBuffer(GLEnum.ArrayBuffer, qubeVertices);
+        Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)qubesVertexArray.AsSpan(), GLEnum.StaticDraw);
+        Gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, null);
+        Gl.EnableVertexAttribArray(0);
+
+        uint qubeColors = Gl.GenBuffer();
+        Gl.BindBuffer(GLEnum.ArrayBuffer, qubeColors);
+        Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)qubesColorArray.AsSpan(), GLEnum.StaticDraw);
+        Gl.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 0, null);
+        Gl.EnableVertexAttribArray(1);
+
+        uint qubeIndices = Gl.GenBuffer();
+        Gl.BindBuffer(GLEnum.ElementArrayBuffer, qubeIndices);
+        Gl.BufferData(GLEnum.ElementArrayBuffer, (ReadOnlySpan<uint>)qubesIndexArray.AsSpan(), GLEnum.StaticDraw);
+
+        Gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+
+        Gl.UseProgram(program);
+        
+        Gl.DrawElements(GLEnum.Triangles, (uint)qubesIndexArray.Length, GLEnum.UnsignedInt, null); // we used element buffer
+        Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
+
+        Gl.BindVertexArray(vao);
+
+        Gl.BindBuffer(GLEnum.ArrayBuffer, qubeVertices);
+        Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)qubesBorderVertexArray.AsSpan(), GLEnum.StaticDraw);
+        Gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, null);
+        Gl.EnableVertexAttribArray(0);
+
+        Gl.BindBuffer(GLEnum.ArrayBuffer, qubeColors);
+        Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)qubesBorderColorArray.AsSpan(), GLEnum.StaticDraw);
+        Gl.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 0, null);
+        Gl.EnableVertexAttribArray(1);
+
+        Gl.BindBuffer(GLEnum.ElementArrayBuffer, qubeIndices);
+        Gl.BufferData(GLEnum.ElementArrayBuffer, (ReadOnlySpan<uint>)qubesBorderIndexArray.AsSpan(), GLEnum.StaticDraw);
+
+        Gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+
+        Gl.UseProgram(program);
+        Gl.DrawElements(GLEnum.Lines, (uint)qubesBorderIndexArray.Length, GLEnum.UnsignedInt, null); // we used element buffer
+        Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
+
+        Gl.BindVertexArray(vao);
+
+
+        uint vao2 = Gl.GenVertexArray();
+        Gl.BindVertexArray(vao2);
+        if (!Gl.IsVertexArray(vao2))
         {
             throw new Exception("Failed to create vertex array object!");
         }
@@ -136,25 +204,20 @@ public static class L1F3
         uint[] borderIndexArray;
         (borderVertexArray, borderColorArray, borderIndexArray) = getBorder();
 
-        float[] qubesVertexArray;
-        float[] qubesColorArray;
-        uint[] qubesIndexArray;
-        (qubesVertexArray, qubesColorArray, qubesIndexArray) = getQubes();
-        
-        uint vertices = Gl.GenBuffer();
-        Gl.BindBuffer(GLEnum.ArrayBuffer, vertices);
+        uint borderVertices = Gl.GenBuffer();
+        Gl.BindBuffer(GLEnum.ArrayBuffer, borderVertices);
         Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)borderVertexArray.AsSpan(), GLEnum.StaticDraw);
         Gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, null);
         Gl.EnableVertexAttribArray(0);
 
-        uint colors = Gl.GenBuffer();
-        Gl.BindBuffer(GLEnum.ArrayBuffer, colors);
+        uint borderColors = Gl.GenBuffer();
+        Gl.BindBuffer(GLEnum.ArrayBuffer, borderColors);
         Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)borderColorArray.AsSpan(), GLEnum.StaticDraw);
         Gl.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 0, null);
         Gl.EnableVertexAttribArray(1);
 
-        uint indices = Gl.GenBuffer();
-        Gl.BindBuffer(GLEnum.ElementArrayBuffer, indices);
+        uint borderIndices = Gl.GenBuffer();
+        Gl.BindBuffer(GLEnum.ElementArrayBuffer, borderIndices);
         Gl.BufferData(GLEnum.ElementArrayBuffer, (ReadOnlySpan<uint>)borderIndexArray.AsSpan(), GLEnum.StaticDraw);
 
         Gl.BindBuffer(GLEnum.ArrayBuffer, 0);
@@ -162,124 +225,237 @@ public static class L1F3
         Gl.UseProgram(program);
 
         Gl.DrawElements(GLEnum.Lines, (uint)borderIndexArray.Length, GLEnum.UnsignedInt, null); // we used element buffer
-        //Gl.DrawElements(GLEnum.Triangles, (uint)indexArray.Length, GLEnum.UnsignedInt, null); // we used element buffer
         Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
-        Gl.BindVertexArray(vao);
-
-        Gl.BindBuffer(GLEnum.ArrayBuffer, vertices);
-        Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)qubesVertexArray.AsSpan(), GLEnum.StaticDraw);
-        Gl.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 0, null);
-        Gl.EnableVertexAttribArray(0);
-        
-        Gl.BindBuffer(GLEnum.ArrayBuffer, colors);
-        Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)qubesColorArray.AsSpan(), GLEnum.StaticDraw);
-        Gl.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 0, null);
-        Gl.EnableVertexAttribArray(1);
-        
-        Gl.BindBuffer(GLEnum.ElementArrayBuffer, indices);
-        Gl.BufferData(GLEnum.ElementArrayBuffer, (ReadOnlySpan<uint>)qubesIndexArray.AsSpan(), GLEnum.StaticDraw);
-        
-        Gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-
-        Gl.UseProgram(program);
-
-        Gl.DrawElements(GLEnum.Triangles, (uint)qubesIndexArray.Length, GLEnum.UnsignedInt, null); // we used element buffer
-        Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
-        Gl.BindVertexArray(vao);
+        Gl.BindVertexArray(vao2);
 
         // always unbound the vertex buffer first, so no halfway results are displayed by accident
-        Gl.DeleteBuffer(vertices);
-        Gl.DeleteBuffer(colors);
-        Gl.DeleteBuffer(indices);
-        Gl.DeleteVertexArray(vao);
+        Gl.DeleteBuffer(borderVertices);
+        Gl.DeleteBuffer(borderColors);
+        Gl.DeleteBuffer(borderIndices);
+        Gl.DeleteBuffer(qubeVertices);
+        Gl.DeleteBuffer(qubeColors);
+        Gl.DeleteBuffer(qubeIndices);
+        Gl.DeleteVertexArray(vao2);
     }
     
+    private static (float[], float[], uint[]) getQubesBorders()
+    {
+        List<Vector3D<float>> qubeBorders = new List<Vector3D<float>>();
+
+        Vector3D<float> p1; 
+        Vector3D<float> p2; 
+        Vector3D<float> p3; 
+        Vector3D<float> p4; 
+        p1 = startPoint;
+        p2 = new Vector3D<float>(-length, start, 0.0f);
+        p2 = RotatePointAroundPoint(p2, startPoint, -angle);
+
+        p1.Y += length / 3;
+        qubeBorders.Add(p1);
+        p2.Y += length / 3;
+        qubeBorders.Add(p2);
+        p2.Y += length / 3;
+        qubeBorders.Add(p2);
+        p1.Y += length / 3;
+        qubeBorders.Add(p1);
+
+        p1 = new Vector3D<float>(-length / 3, start, 0.0f);
+        p1 = RotatePointAroundPoint(p1, startPoint, -angle);
+        qubeBorders.Add(p1);
+        p2 = p1;
+        p2.Y += length;
+        qubeBorders.Add(p2);
+        p1 = new Vector3D<float>(-length / 3 * 2, start, 0.0f);
+        p1 = RotatePointAroundPoint(p1, startPoint, -angle);
+        qubeBorders.Add(p1);
+        p2 = p1;
+        p2.Y += length;
+        qubeBorders.Add(p2);
+
+        p1 = startPoint;
+        p2 = new Vector3D<float>(length, start, 0.0f);
+        p2 = RotatePointAroundPoint(p2, startPoint, angle);
+
+        p1.Y += length / 3;
+        qubeBorders.Add(p1);
+        p2.Y += length / 3;
+        qubeBorders.Add(p2);
+        p2.Y += length / 3;
+        qubeBorders.Add(p2);
+        p1.Y += length / 3;
+        qubeBorders.Add(p1);
+
+        p1 = new Vector3D<float>(length / 3, start, 0.0f);
+        p1 = RotatePointAroundPoint(p1, startPoint, angle);
+        qubeBorders.Add(p1);
+        p2 = p1;
+        p2.Y += length;
+        qubeBorders.Add(p2);
+        p1 = new Vector3D<float>(length / 3 * 2, start, 0.0f);
+        p1 = RotatePointAroundPoint(p1, startPoint, angle);
+        qubeBorders.Add(p1);
+        p2 = p1;
+        p2.Y += length;
+        qubeBorders.Add(p2);
+
+        p1 = new Vector3D<float>(-length / 3, start, 0.0f);
+        p1 = RotatePointAroundPoint(p1, startPoint, -angle);
+        p1.Y += length;
+
+        p2 = new Vector3D<float>(length, start, 0.0f);
+        p2 = RotatePointAroundPoint(p2, startPoint, angle);
+        p2.Y += length;
+
+        p3 = new Vector3D<float>(-length / 3, 0.0f, 0.0f) + p2;
+        p3 = RotatePointAroundPoint(p3, p2, -angle);
+        qubeBorders.Add(p1);
+        qubeBorders.Add(p3);
+
+        p1 = new Vector3D<float>(-length / 3 * 2, start, 0.0f);
+        p1 = RotatePointAroundPoint(p1, startPoint, -angle);
+        p1.Y += length;
+
+        p2 = new Vector3D<float>(length, start, 0.0f);
+        p2 = RotatePointAroundPoint(p2, startPoint, angle);
+        p2.Y += length;
+
+        p3 = new Vector3D<float>(-length / 3 * 2, 0.0f, 0.0f) + p2;
+        p3 = RotatePointAroundPoint(p3, p2, -angle);
+        qubeBorders.Add(p1);
+        qubeBorders.Add(p3);
+
+        p1 = new Vector3D<float>(length / 3, start, 0.0f);
+        p1 = RotatePointAroundPoint(p1, startPoint, angle);
+        p1.Y += length;
+
+        p2 = new Vector3D<float>(-length, start, 0.0f);
+        p2 = RotatePointAroundPoint(p2, startPoint, -angle);
+        p2.Y += length;
+
+        p3 = new Vector3D<float>(length / 3, 0.0f, 0.0f) + p2;
+        p3 = RotatePointAroundPoint(p3, p2, angle);
+        qubeBorders.Add(p1);
+        qubeBorders.Add(p3);
+
+        p1 = new Vector3D<float>(length / 3 * 2, start, 0.0f);
+        p1 = RotatePointAroundPoint(p1, startPoint, angle);
+        p1.Y += length;
+
+        p2 = new Vector3D<float>(-length, start, 0.0f);
+        p2 = RotatePointAroundPoint(p2, startPoint, -angle);
+        p2.Y += length;
+
+        p3 = new Vector3D<float>(length / 3 * 2, 0.0f, 0.0f) + p2;
+        p3 = RotatePointAroundPoint(p3, p2, angle);
+        qubeBorders.Add(p1);
+        qubeBorders.Add(p3);
+
+
+        List<Vector4D<float>> colors = new List<Vector4D<float>>();
+        for(int i = 0; i < qubeBorders.Count; i++)
+        {
+            colors.Add(new Vector4D<float>(0.0f, 0.0f, 0.0f, 1.0f));
+        }
+
+        uint[] indices = [
+            0, 1,
+            2, 3,
+            4, 5,
+            6, 7,
+            8, 9,
+            10, 11,
+            12, 13,
+            14, 15,
+            16, 17,
+            18, 19,
+            20, 21,
+            22, 23,
+        ];
+
+        return (Vector3DArrayToArray(qubeBorders), Vector4DArrayToArray(colors), indices);
+    }
+
     private static (float[], float[], uint[]) getQubes()
     {
         List<Vector3D<float>> qubes = new List<Vector3D<float>>();
-        Vector3D<float> aux;
-        Vector3D<float> aux2;
-        
-        float[] angles = [-angle, angle];
-        float[] lengths = [-length, length];
-        for (int k = 0; k < 2; k++)
+        Vector3D<float> p1, p2, p3, p4;
+        p1 = startPoint;
+
+        for (int i = 0; i < 3; i++)
         {
+            p1 = new Vector3D<float>(0.0f, start + length / 3 * i, 0.0f);
             for (int j = 0; j < 3; j++)
             {
-                aux = new Vector3D<float>(0.0f, startPoint + (float)j / 3 * length, 0.0f);
-                qubes.Add(aux);
-                for (int i = 0; i < 3; i++)
-                {
-                    if (i != 0)
-                    {
-                        qubes.Add(qubes[k * 36 + j * 12 + (i - 1) * 4 + 1]);
-                    }
-                    aux = new Vector3D<float>(lengths[k] * (i + 1) / 3, startPoint + (float)j / 3 * length, 0.0f);
-                    aux = RotatePointAroundPoint(aux, qubes[k * 36 + j * 12], angles[k]);
-                    qubes.Add(aux);
-                    aux.Y += length / 3;
-                    qubes.Add(aux);
-                    if (i != 0)
-                    {
-                        aux = qubes[k * 36 + j * 12 + (i - 1) * 4 + 1];
-                    }
-                    else
-                    {
-                        aux = qubes[k * 36 + j * 12];
-                    }
-                    aux.Y += length / 3;
-                    qubes.Add(aux);
-                }
+                qubes.Add(p1);
+
+                p2 = p1 + new Vector3D<float>(-length / 3, 0, 0.0f);
+                p2 = RotatePointAroundPoint(p2, p1, -angle);
+                qubes.Add(p2);
+
+                p3 = p2;
+                p3.Y += length / 3;
+                qubes.Add(p3);
+
+                p4 = p1;
+                p4.Y += length / 3;
+                qubes.Add(p4);
+
+                p1 = p2;
             }
         }
-
-        for (int j = 0; j < 2; j++)
+        for (int i = 0; i < 3; i++)
         {
-            aux2 = new Vector3D<float>(length * j / 3, startPoint, 0.0f);
-            aux2 = RotatePointAroundPoint(aux2, new Vector3D<float>(0.0f, -0.7f, 0.0f), angle);
-            aux2.Y += length;
-            qubes.Add(aux2);
-            Vector3D<float> aux3 = aux2;
-            for (int i = 0; i < 1; i++)
+            p1 = new Vector3D<float>(0.0f, start + length / 3 * i, 0.0f);
+            for (int j = 0; j < 3; j++)
             {
-                if (i != 0)
-                {
-                    aux2 = qubes[qubes.Count - 3];
-                    qubes.Add(aux2);
-                }
-                aux = new Vector3D<float>(length * (i + 1) / 3, startPoint, 0.0f);
-                aux = RotatePointAroundPoint(aux, new Vector3D<float>(0.0f, startPoint, 0.0f), -angle);
-                aux.Y += length;
-                /*
-                aux = new Vector3D<float>(-length * (i + 1) / 3, startPoint + (float)j / 3 * length, 0.0f);
-                aux = RotatePointAroundPoint(aux, new Vector3D<float>(0.0f, startPoint, 0.0f), -angle);
-                aux.Y += length;
-                */
-                qubes.Add(aux);
-                aux = aux2;
-                aux.Y += length / 3;
-                qubes.Add(aux);
+                qubes.Add(p1);
 
-                if (i == 0)
-                {
-                    aux = new Vector3D<float>(length * (j + 1) / 3, startPoint + (float)j / 3 * length, 0.0f);
-                    aux = RotatePointAroundPoint(aux, new Vector3D<float>(0.0f, -0.7f, 0.0f), angle);
-                    aux.Y += length;
-                    qubes.Add(aux);
-                }
-                else
-                {
-                    qubes.Add(qubes[qubes.Count - 5]);
-                }
+                p2 = p1 + new Vector3D<float>(length / 3, 0, 0.0f);
+                p2 = RotatePointAroundPoint(p2, p1, angle);
+                qubes.Add(p2);
+
+                p3 = p2;
+                p3.Y += length / 3;
+                qubes.Add(p3);
+
+                p4 = p1;
+                p4.Y += length / 3;
+                qubes.Add(p4);
+
+                p1 = p2;
             }
         }
 
+        for (int i = 0; i < 3; i++)
+        {
+            p1 = new Vector3D<float>(length / 3 * i, start, 0.0f);
+            p1 = RotatePointAroundPoint(p1, startPoint, angle);
+            p1.Y += length;
+            for (int j = 0; j < 3; j++)
+            {
+                qubes.Add(p1);
+
+                p2 = p1 + new Vector3D<float>(-length / 3, 0.0f, 0.0f);
+                p2 = RotatePointAroundPoint(p2, p1, -angle);
+                qubes.Add(p2);
+
+                p3 = p1;
+                p3.Y += length / 3;
+                qubes.Add(p3);
+
+                p4 = p1 + new Vector3D<float>(length / 3, 0.0f, 0.0f);
+                p4 = RotatePointAroundPoint(p4, p1, angle);
+                qubes.Add(p4);
+
+                p1 = p2;
+            }
+        }
         List<Vector4D<float>> qubeColors = new List<Vector4D<float>>();
         Random random = new Random();
 
         float[] nums = [1.0f, 0.0f, 0.0f];
 
-        for (int j = 0; j < 9 * 3; j++)
+        for (int j = 0; j < 27; j++)
         {
             for (int i = 0; i < 4; i++)
             {
@@ -291,7 +467,7 @@ public static class L1F3
         float[] qubesColorArray = Vector4DArrayToArray(qubeColors);
 
         List<Vector2D<uint>> qubeLineIndices = new List<Vector2D<uint>>();
-        for (uint i = 0 * 4; i < 4 * 9; i += 4)
+        for (uint i = 0 * 4; i < 4 * 9 * 3; i += 4)
         {
             qubeLineIndices.Add(new Vector2D<uint>(i, i + 1));
             qubeLineIndices.Add(new Vector2D<uint>(i, i + 3));
@@ -305,7 +481,6 @@ public static class L1F3
         }
 
         uint[] qubesIndexArray = Vector3DArrayToArray(qubeIndices);
-        uint[] qubeLineIndexArray = Vector2DArrayToArray(qubeLineIndices);
 
         return (Vector3DArrayToArray(qubes), qubesColorArray, qubesIndexArray);
     }
@@ -313,10 +488,10 @@ public static class L1F3
     private static (float[], float[], uint[]) getBorder()
     {
         List<Vector3D<float>> border = new List<Vector3D<float>>();
-        Vector3D<float> aux = new Vector3D<float>(0.0f, startPoint, 0.0f);
+        Vector3D<float> aux = new Vector3D<float>(0.0f, start, 0.0f);
         border.Add(aux);
 
-        aux = new Vector3D<float>(-length, startPoint, 0.0f);
+        aux = new Vector3D<float>(-length, start, 0.0f);
         aux = RotatePointAroundPoint(aux, border[0], -angle);
         border.Add(aux);
 
@@ -328,7 +503,7 @@ public static class L1F3
         aux.Y += length;
         border.Add(aux);
 
-        aux = new Vector3D<float>(length, startPoint, 0.0f);
+        aux = new Vector3D<float>(length, start, 0.0f);
         aux = RotatePointAroundPoint(aux, border[0], angle);
         border.Add(aux);
 
