@@ -1,14 +1,20 @@
-﻿using Silk.NET.OpenGL;
+﻿using Silk.NET.Maths;
+using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
 
 namespace lab1;
-public static class L1F1
+public static class L1F2
 {
     private static IWindow graphicWindow;
 
     private static GL Gl;
 
     private static uint program;
+
+    private static readonly float length = 0.5f;
+    private static readonly float startPoint = -0.7f;
+    private static readonly float radToDeg = MathF.PI / 180;
+    private static readonly float angle = 30.0f;
 
     private static readonly string VertexShaderSource = @"
         #version 330 core
@@ -24,7 +30,6 @@ public static class L1F1
         }
         ";
 
-
     private static readonly string FragmentShaderSource = @"
         #version 330 core
         out vec4 FragColor;
@@ -37,11 +42,11 @@ public static class L1F1
         }
         ";
 
-    static void Main1(string[] args)
+    static void Main(string[] args)
     {
         WindowOptions windowOptions = WindowOptions.Default;
-        windowOptions.Title = "Lab 01";
-        windowOptions.Size = new Silk.NET.Maths.Vector2D<int>(500, 500);
+        windowOptions.Title = "Lab01-2";
+        windowOptions.Size = new Silk.NET.Maths.Vector2D<int>(1000, 1000);
 
         graphicWindow = Window.Create(windowOptions);
 
@@ -126,25 +131,54 @@ public static class L1F1
             throw new Exception("Failed to create vertex array object!");
         }
 
-        float[] vertexArray = new float[] {
-                -0.5f, -0.5f, 0.0f,
-                +0.5f, -0.5f, 0.0f,
-                 0.0f, +0.5f, 0.0f,
-                 1f, 1f, 0f
-            };
+        Vector3D<float>[] qube = new Vector3D<float>[12];
+        qube[0] = new Vector3D<float>(0.0f, startPoint, 0.0f);
+        qube[1] = new Vector3D<float>(-length, startPoint, 0.0f);
+        qube[1] = RotatePointAroundPoint(qube[1], qube[0], -angle);
+        qube[2] = qube[1];
+        qube[2].Y += length;
+        qube[3] = qube[0];
+        qube[3].Y += length;
+
+        qube[4] = qube[0];
+        qube[5] = new Vector3D<float>(length, startPoint, 0.0f);
+        qube[5] = RotatePointAroundPoint(qube[5], qube[4], angle);
+        qube[6] = qube[5];
+        qube[6].Y += length;
+        qube[7] = qube[0];
+        qube[7].Y += length;
+
+        qube[8] = qube[3];
+        qube[9] = qube[2];
+        qube[10] = RotatePointAroundPoint(qube[9], qube[8], - 2 * angle);
+        qube[11] = qube[6];
+
+        float[] vertexArray = Vector3DArrayToArray(qube);
 
         float[] colorArray = new float[] {
                 1.0f, 0.0f, 0.0f, 1.0f,
+                1.0f, 0.0f, 0.0f, 1.0f,
+                1.0f, 0.0f, 0.0f, 1.0f,
+                1.0f, 0.0f, 0.0f, 1.0f,
+                0.0f, 1.0f, 0.0f, 1.0f,
+                0.0f, 1.0f, 0.0f, 1.0f,
+                0.0f, 1.0f, 0.0f, 1.0f,
                 0.0f, 1.0f, 0.0f, 1.0f,
                 0.0f, 0.0f, 1.0f, 1.0f,
-                1.0f, 0.0f, 0.0f, 1.0f,
+                0.0f, 0.0f, 1.0f, 1.0f,
+                0.0f, 0.0f, 1.0f, 1.0f,
+                0.0f, 0.0f, 1.0f, 1.0f,
             };
 
         uint[] indexArray = new uint[] {
                 0, 1, 2,
-                2, 1, 3
-            };
-
+                0, 3, 2,
+                4, 5, 6,
+                4, 7, 6,
+                8, 9, 10,
+                8, 11, 10,
+            }; 
+        
         uint vertices = Gl.GenBuffer();
         Gl.BindBuffer(GLEnum.ArrayBuffer, vertices);
         Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)vertexArray.AsSpan(), GLEnum.StaticDraw);
@@ -174,5 +208,27 @@ public static class L1F1
         Gl.DeleteBuffer(colors);
         Gl.DeleteBuffer(indices);
         Gl.DeleteVertexArray(vao);
+    }
+
+    private static Vector3D<float> RotatePointAroundPoint(Vector3D<float> point, Vector3D<float> refPoint, float angle)
+    {
+        Matrix3X3<float> rotate = new Matrix3X3<float>();
+        point -= refPoint;
+        rotate.Row1 = point;
+
+        return (rotate * Matrix3X3.CreateRotationZ(angle * radToDeg)).Row1 + refPoint;
+    }
+
+    private static float[] Vector3DArrayToArray(Vector3D<float>[] vectors)
+    {
+        float[] array = new float[3 * vectors.Length];
+        for (int i = 0; i < vectors.Length; i++)
+        {
+            array[3 * i] = vectors[i].X;
+            array[3 * i + 1] = vectors[i].Y;
+            array[3 * i + 2] = vectors[i].Z;
+        }
+
+        return array;
     }
 }
