@@ -42,7 +42,7 @@ public static class L1F2
         }
         ";
 
-    static void Main(string[] args)
+    static void Main2(string[] args)
     {
         WindowOptions windowOptions = WindowOptions.Default;
         windowOptions.Title = "Lab01-2";
