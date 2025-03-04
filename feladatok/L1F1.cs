@@ -56,22 +56,47 @@ namespace lab1
         private static void GraphicWindow_Load()
         {
             Gl = graphicWindow.CreateOpenGL();
-
+            
             Gl.ClearColor(System.Drawing.Color.White);
+            if (Gl.GetError() != GLEnum.NoError)
+            {
+                throw new Exception("Failed to clear color!");
+            }
 
             uint vshader = Gl.CreateShader(ShaderType.VertexShader);
+            if (!Gl.IsShader(vshader))
+            {
+                throw new Exception("Failed to create vertex shader!");
+            }
+            
             uint fshader = Gl.CreateShader(ShaderType.FragmentShader);
+            if (!Gl.IsShader(fshader))
+            {
+                throw new Exception("Failed to create fragment shader!");
+            }
 
             Gl.ShaderSource(vshader, VertexShaderSource);
             Gl.CompileShader(vshader);
             Gl.GetShader(vshader, ShaderParameterName.CompileStatus, out int vStatus);
             if (vStatus != (int)GLEnum.True)
+            {
                 throw new Exception("Vertex shader failed to compile: " + Gl.GetShaderInfoLog(vshader));
+            }
 
             Gl.ShaderSource(fshader, FragmentShaderSource);
             Gl.CompileShader(fshader);
+            Gl.GetShader(vshader, ShaderParameterName.CompileStatus, out int fStatus);
+            if (fStatus != (int)GLEnum.True)
+            {
+                throw new Exception("Fragment shader failed to compile: " + Gl.GetShaderInfoLog(vshader));
+            }
 
             program = Gl.CreateProgram();
+            if (!Gl.IsProgram(program))
+            {
+                throw new Exception("Failed to create program!\n" + Gl.GetProgramInfoLog(program));
+            }
+
             Gl.AttachShader(program, vshader);
             Gl.AttachShader(program, fshader);
             Gl.LinkProgram(program);
@@ -97,6 +122,10 @@ namespace lab1
 
             uint vao = Gl.GenVertexArray();
             Gl.BindVertexArray(vao);
+            if (!Gl.IsVertexArray(vao))
+            {
+                throw new Exception("Failed to create vertex array object!");
+            }
 
             float[] vertexArray = new float[] {
                 -0.5f, -0.5f, 0.0f,
