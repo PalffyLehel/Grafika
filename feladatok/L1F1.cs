@@ -174,5 +174,12 @@ public static class L1F1
         Gl.DeleteBuffer(colors);
         Gl.DeleteBuffer(indices);
         Gl.DeleteVertexArray(vao);
+
+        var error = Gl.GetError();
+
+        if (error != GLEnum.NoError)
+        {
+            throw new Exception(error.ToString());
+        }
     }
 }
