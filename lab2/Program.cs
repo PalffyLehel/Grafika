@@ -21,6 +21,8 @@ namespace Szeminarium1_24_02_17_2
 
         private static GlCube glCubeRotating;
 
+        private static GlCube glRubics;
+
         private const string ModelMatrixVariableName = "uModel";
         private const string ViewMatrixVariableName = "uView";
         private const string ProjectionMatrixVariableName = "uProjection";
@@ -180,10 +182,26 @@ namespace Szeminarium1_24_02_17_2
             SetViewMatrix();
             SetProjectionMatrix();
 
-            DrawPulsingCenterCube();
+            DrawRubicsCube();
+        }
 
-            DrawRevolvingCube();
+        private static unsafe void DrawRubicsCube()
+        {
+            for(int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(0.25f);
+                    Matrix4X4<float> translation = Matrix4X4.CreateTranslation(-0.25f + j * 0.25f + j * 0.01f, 0.25f - i * 0.25f - i * 0.01f, 0.0f);
+                    modelMatrix *= translation;
+                    SetModelMatrix(modelMatrix);
 
+                    Gl.BindVertexArray(glRubics.Vao);
+                    Gl.DrawElements(GLEnum.Triangles, glRubics.IndexArrayLength, GLEnum.UnsignedInt, null);
+                    Gl.BindVertexArray(0);
+                }
+            }
+            
         }
 
         private static unsafe void DrawRevolvingCube()
@@ -226,7 +244,6 @@ namespace Szeminarium1_24_02_17_2
 
         private static unsafe void SetUpObjects()
         {
-
             float[] face1Color = [1.0f, 0.0f, 0.0f, 1.0f];
             float[] face2Color = [0.0f, 1.0f, 0.0f, 1.0f];
             float[] face3Color = [0.0f, 0.0f, 1.0f, 1.0f];
@@ -234,6 +251,8 @@ namespace Szeminarium1_24_02_17_2
             float[] face5Color = [0.0f, 1.0f, 1.0f, 1.0f];
             float[] face6Color = [1.0f, 1.0f, 0.0f, 1.0f];
 
+            glRubics = GlCube.CreateCubeWithFaceColors(Gl, face1Color, face2Color, face3Color, face4Color, face5Color, face6Color);
+            
             glCubeCentered = GlCube.CreateCubeWithFaceColors(Gl, face1Color, face2Color, face3Color, face4Color, face5Color, face6Color);
 
             face1Color = [0.5f, 0.0f, 0.0f, 1.0f];
