@@ -5,7 +5,7 @@ using Silk.NET.Windowing;
 
 namespace Szeminarium1_24_02_17_2
 {
-    internal static class Program
+    internal static class L2F1
     {
         private static CameraDescriptor cameraDescriptor = new();
 
@@ -26,6 +26,9 @@ namespace Szeminarium1_24_02_17_2
         private const string ModelMatrixVariableName = "uModel";
         private const string ViewMatrixVariableName = "uView";
         private const string ProjectionMatrixVariableName = "uProjection";
+
+        private const float gap = 0.002f;
+        private const float cubeSize = 0.25f;
 
         private static readonly string VertexShaderSource = @"
         #version 330 core
@@ -187,21 +190,23 @@ namespace Szeminarium1_24_02_17_2
 
         private static unsafe void DrawRubicsCube()
         {
-            for(int i = 0; i < 3; i++)
+            for (int k = 0; k < 3; k++)
             {
                 for (int j = 0; j < 3; j++)
                 {
-                    Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(0.25f);
-                    Matrix4X4<float> translation = Matrix4X4.CreateTranslation(-0.25f + j * 0.25f + j * 0.01f, 0.25f - i * 0.25f - i * 0.01f, 0.0f);
-                    modelMatrix *= translation;
-                    SetModelMatrix(modelMatrix);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(cubeSize);
+                        Matrix4X4<float> translation = Matrix4X4.CreateTranslation(-cubeSize + j * cubeSize + j * gap, cubeSize - i * cubeSize - i * gap, k * (cubeSize + gap));
+                        modelMatrix *= translation;
+                        SetModelMatrix(modelMatrix);
 
-                    Gl.BindVertexArray(glRubics.Vao);
-                    Gl.DrawElements(GLEnum.Triangles, glRubics.IndexArrayLength, GLEnum.UnsignedInt, null);
-                    Gl.BindVertexArray(0);
+                        Gl.BindVertexArray(glRubics.Vao);
+                        Gl.DrawElements(GLEnum.Triangles, glRubics.IndexArrayLength, GLEnum.UnsignedInt, null);
+                        Gl.BindVertexArray(0);
+                    }
                 }
             }
-            
         }
 
         private static unsafe void DrawRevolvingCube()
