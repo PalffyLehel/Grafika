@@ -23,7 +23,7 @@ namespace Szeminarium1_24_02_17_2
         private const string ViewMatrixVariableName = "uView";
         private const string ProjectionMatrixVariableName = "uProjection";
 
-        private const float gap = 0.002f;
+        private const float gap = 0.01f;
         private const float cubeSize = 0.25f;
 
         private static readonly string VertexShaderSource = @"
@@ -203,6 +203,8 @@ namespace Szeminarium1_24_02_17_2
                     }
                 }
             }
+
+            Console.WriteLine();
         }
 
         private static unsafe void SetModelMatrix(Matrix4X4<float> modelMatrix)
@@ -220,17 +222,62 @@ namespace Szeminarium1_24_02_17_2
 
         private static unsafe void SetUpObjects()
         {
-            float[] face1Color = [1.0f, 0.0f, 0.0f, 1.0f];
-            float[] face2Color = [0.0f, 1.0f, 0.0f, 1.0f];
-            float[] face3Color = [0.0f, 0.0f, 1.0f, 1.0f];
-            float[] face4Color = [1.0f, 0.0f, 1.0f, 1.0f];
-            float[] face5Color = [0.0f, 1.0f, 1.0f, 1.0f];
-            float[] face6Color = [1.0f, 1.0f, 0.0f, 1.0f];
+            float[] face0Color = [0.2f, 0.2f, 0.2f, 1.0f];
+            float[] face1Color = [1.0f, 1.0f, 1.0f, 1.0f];
+            float[] face2Color = [1.0f, 1.0f, 0.0f, 1.0f];
+            float[] face3Color = [1.0f, 0.37f, 0.08f, 1.0f];
+            float[] face4Color = [1.0f, 0.0f, 0.0f, 1.0f];
+            float[] face5Color = [0.0f, 1.0f, 0.0f, 1.0f];
+            float[] face6Color = [0.0f, 0.0f, 1.0f, 1.0f];
 
             glRubics = new List<GlCube>();
             for (int i = 0; i < 27; i++)
             {
-                glRubics.Add(GlCube.CreateCubeWithFaceColors(Gl, face1Color, face2Color, face3Color, face4Color, face5Color, face6Color));
+                float[]
+                    f1c = face0Color,
+                    f2c = face0Color,
+                    f3c = face0Color,
+                    f4c = face0Color,
+                    f5c = face0Color,
+                    f6c = face0Color;
+
+                // top
+                if (i % 3 == 0)
+                {
+                    f1c = face2Color;
+                }
+
+                // bottom side
+                if (i % 3 == 2)
+                {
+                    f4c = face1Color;
+                }
+
+                // left
+                if (i % 9 < 3)
+                {
+                    f3c = face3Color;
+                }
+
+                // right
+                if (i % 9 > 5)
+                {
+                    f6c = face4Color;
+                }
+
+                // front
+                if (i >= 18)
+                {
+                    f2c = face5Color;
+                }
+
+                // back
+                if (i < 9)
+                {
+                    f5c = face6Color;
+                }
+
+                glRubics.Add(GlCube.CreateCubeWithFaceColors(Gl, f1c, f2c, f3c, f4c, f5c, f6c));
             }
         }
 
