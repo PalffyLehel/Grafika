@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Szeminarium1_24_02_17_2
+namespace lab2
 {
     internal class GlCube
     {

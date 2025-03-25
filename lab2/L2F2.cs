@@ -5,7 +5,7 @@ using Silk.NET.Windowing;
 
 namespace lab2
 {
-    public static class L2F1
+    public static class L2F2
     {
         private static CameraDescriptor cameraDescriptor = new();
 
@@ -57,7 +57,7 @@ namespace lab2
         }
         ";
 
-        static void Main1(string[] args)
+        static void Main(string[] args)
         {
             WindowOptions windowOptions = WindowOptions.Default;
             windowOptions.Title = "2 szeminárium";
@@ -209,7 +209,7 @@ namespace lab2
 
         private static unsafe void SetModelMatrix(Matrix4X4<float> modelMatrix)
         {
-            
+
             int location = Gl.GetUniformLocation(program, ModelMatrixVariableName);
             if (location == -1)
             {
