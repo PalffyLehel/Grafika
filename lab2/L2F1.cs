@@ -7,7 +7,7 @@ namespace lab2
 {
     public static class L2F1
     {
-        private static CameraDescriptor cameraDescriptor = new();
+        private static Camera camera = new Camera(new Vector3D<float>(0.0f, 0.0f, 2.0f), new Vector3D<float>(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
 
         private static CubeArrangementModel cubeArrangementModel = new();
 
@@ -131,31 +131,6 @@ namespace lab2
 
         private static void Keyboard_KeyDown(IKeyboard keyboard, Key key, int arg3)
         {
-            switch (key)
-            {
-                case Key.Left:
-                    cameraDescriptor.DecreaseZYAngle();
-                    break;
-                    ;
-                case Key.Right:
-                    cameraDescriptor.IncreaseZYAngle();
-                    break;
-                case Key.Down:
-                    cameraDescriptor.IncreaseDistance();
-                    break;
-                case Key.Up:
-                    cameraDescriptor.DecreaseDistance();
-                    break;
-                case Key.U:
-                    cameraDescriptor.IncreaseZXAngle();
-                    break;
-                case Key.D:
-                    cameraDescriptor.DecreaseZXAngle();
-                    break;
-                case Key.Space:
-                    cubeArrangementModel.AnimationEnabeld = !cubeArrangementModel.AnimationEnabeld;
-                    break;
-            }
         }
 
         private static void Window_Update(double deltaTime)
@@ -301,7 +276,7 @@ namespace lab2
 
         private static unsafe void SetViewMatrix()
         {
-            var viewMatrix = Matrix4X4.CreateLookAt(cameraDescriptor.Position, cameraDescriptor.Target, cameraDescriptor.UpVector);
+            var viewMatrix = camera.getViewMatrix();
             int location = Gl.GetUniformLocation(program, ViewMatrixVariableName);
 
             if (location == -1)

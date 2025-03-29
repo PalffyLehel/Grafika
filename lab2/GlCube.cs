@@ -1,4 +1,5 @@
-﻿using Silk.NET.OpenGL;
+﻿using Silk.NET.Maths;
+using Silk.NET.OpenGL;
 using Silk.NET.Vulkan;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,8 @@ namespace lab2
         public uint Indices { get; }
         public uint IndexArrayLength { get; }
 
+        public Vector3D<float> rotation;
+
         private GL Gl;
 
         private GlCube(uint vao, uint vertices, uint colors, uint indeces, uint indexArrayLength, GL gl)
@@ -27,6 +30,7 @@ namespace lab2
             this.Indices = indeces;
             this.IndexArrayLength = indexArrayLength;
             this.Gl = gl;
+            rotation = Vector3D<float>.Zero;
         }
 
         public static unsafe GlCube CreateCubeWithFaceColors(GL Gl, float[] face1Color, float[] face2Color, float[] face3Color, float[] face4Color, float[] face5Color, float[] face6Color)

@@ -7,7 +7,17 @@ namespace lab2
 {
     public static class L2F2
     {
-        private static CameraDescriptor cameraDescriptor = new();
+        private static Camera camera = new Camera(new Vector3D<float>(0.0f, 0.0f, 2.0f),
+                                                  new Vector3D<float>(0.0f, 1.0f, 0.0f),
+                                                  -90.0f, 0.0f);
+
+        private static readonly float radToDeg = MathF.PI / 180;
+        private static readonly float rotationSpeed = 15.0f;
+
+        private static IMouse mouse;
+        private static Vector2D<float> previousPos;
+
+        private static Key? keyPressed;
 
         private static CubeArrangementModel cubeArrangementModel = new();
 
@@ -20,11 +30,16 @@ namespace lab2
         private static List<GlCube> glRubics;
 
         private const string ModelMatrixVariableName = "uModel";
+        private const string RotationMatrixVariableName = "uRotation";
         private const string ViewMatrixVariableName = "uView";
         private const string ProjectionMatrixVariableName = "uProjection";
 
-        private const float gap = 0.01f;
+        private const float gap = 0.02f;
         private const float cubeSize = 0.25f;
+
+        private static bool rotateLeft;
+        private static bool rotateRight;
+        private static float currentAngle;
 
         private static readonly string VertexShaderSource = @"
         #version 330 core
@@ -34,13 +49,14 @@ namespace lab2
         uniform mat4 uModel;
         uniform mat4 uView;
         uniform mat4 uProjection;
+        uniform mat4 uRotation;
 
 		out vec4 outCol;
         
         void main()
         {
 			outCol = vCol;
-            gl_Position = uProjection*uView*uModel*vec4(vPos.x, vPos.y, vPos.z, 1.0);
+            gl_Position = uProjection*uView*uRotation * uModel*vec4(vPos.x, vPos.y, vPos.z, 1.0);
         }
         ";
 
@@ -78,13 +94,20 @@ namespace lab2
 
         private static void Window_Load()
         {
-            //Console.WriteLine("Load");
+            rotateLeft = false;
+            rotateRight = false;
+            currentAngle = 0.0f;
 
-            // set up input handling
             IInputContext inputContext = window.CreateInput();
+            mouse = inputContext.Mice[0];
+            previousPos = new Vector2D<float>(mouse.Position.X, mouse.Position.Y);
+            keyPressed = null;
             foreach (var keyboard in inputContext.Keyboards)
             {
-                keyboard.KeyDown += Keyboard_KeyDown;
+                Console.WriteLine(keyboard);
+                keyboard.KeyDown += keyDown;
+                keyboard.KeyDown += rotateSide;
+                keyboard.KeyUp += keyUp;
             }
 
             Gl = window.CreateOpenGL();
@@ -129,49 +152,71 @@ namespace lab2
             Gl.DeleteShader(fshader);
         }
 
-        private static void Keyboard_KeyDown(IKeyboard keyboard, Key key, int arg3)
-        {
-            switch (key)
-            {
-                case Key.Left:
-                    cameraDescriptor.DecreaseZYAngle();
-                    break;
-                    ;
-                case Key.Right:
-                    cameraDescriptor.IncreaseZYAngle();
-                    break;
-                case Key.Down:
-                    cameraDescriptor.IncreaseDistance();
-                    break;
-                case Key.Up:
-                    cameraDescriptor.DecreaseDistance();
-                    break;
-                case Key.U:
-                    cameraDescriptor.IncreaseZXAngle();
-                    break;
-                case Key.D:
-                    cameraDescriptor.DecreaseZXAngle();
-                    break;
-                case Key.Space:
-                    cubeArrangementModel.AnimationEnabeld = !cubeArrangementModel.AnimationEnabeld;
-                    break;
-            }
-        }
-
         private static void Window_Update(double deltaTime)
         {
-            //Console.WriteLine($"Update after {deltaTime} [s].");
-            // multithreaded
-            // make sure it is threadsafe
-            // NO GL calls
             cubeArrangementModel.AdvanceTime(deltaTime);
+            camera.deltaTime = (float)deltaTime;
+
+            if (keyPressed != null)
+            {
+                camera.keyDown(keyPressed);
+            }
+
+            if (rotateLeft)
+            {
+                for (int i = 0; i < 27; i++)
+                {
+                    if (i % 3 == 2)
+                    {
+                        glRubics[i].rotation.Z += (float)deltaTime * rotationSpeed;
+                    }
+                }
+
+                if (MathF.Abs(glRubics[2].rotation.Z - currentAngle) < 0.1)
+                {
+                    for (int i = 0; i < 27; i++)
+                    {
+                        if (i % 3 == 2)
+                        {
+                            glRubics[i].rotation.Z = currentAngle;
+                        }
+                    }
+
+                    rotateLeft = false;
+                }
+            }
+
+            if (rotateRight)
+            {
+                for (int i = 0; i < 27; i++)
+                {
+                    if (i % 3 == 2)
+                    {
+                        glRubics[i].rotation.Z -= (float)deltaTime * rotationSpeed;
+                    }
+                }
+
+                if (MathF.Abs(glRubics[2].rotation.Z - currentAngle) < 0.1)
+                {
+                    for (int i = 0; i < 27; i++)
+                    {
+                        if (i % 3 == 2)
+                        {
+                            glRubics[i].rotation.Z = currentAngle;
+                        }
+                    }
+
+                    rotateRight = false;
+                }
+            }
+
+            camera.processMouseMovement(previousPos.X - mouse.Position.X, previousPos.Y - mouse.Position.Y, true);
+            previousPos = new Vector2D<float>(mouse.Position.X, mouse.Position.Y);
         }
 
         private static unsafe void Window_Render(double deltaTime)
         {
-            //Console.WriteLine($"Render after {deltaTime} [s].");
-
-            // GL here
+            Gl.ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             Gl.Clear(ClearBufferMask.ColorBufferBit);
             Gl.Clear(ClearBufferMask.DepthBufferBit);
 
@@ -186,43 +231,54 @@ namespace lab2
 
         private static unsafe void DrawRubicsCube()
         {
-            for (int k = 0; k < 3; k++)
+            for (int i = 0; i < 3; i++)
             {
                 for (int j = 0; j < 3; j++)
                 {
-                    for (int i = 0; i < 3; i++)
+                    for (int k = 0; k < 3; k++)
                     {
-                        Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(cubeSize);
-                        Matrix4X4<float> translation = Matrix4X4.CreateTranslation(-cubeSize + j * cubeSize + j * gap, cubeSize - i * cubeSize - i * gap, k * (cubeSize + gap));
-                        modelMatrix *= translation;
-                        SetModelMatrix(modelMatrix);
+                        int index = i * 9 + j * 3 + k;
 
-                        Gl.BindVertexArray(glRubics[k * 9 + j * 3 + i].Vao);
-                        Gl.DrawElements(GLEnum.Triangles, glRubics[k * 9 + j * 3 + i].IndexArrayLength, GLEnum.UnsignedInt, null);
+                        Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(cubeSize);
+                        
+                        float tx = (i - 1) * (cubeSize + gap);
+                        float ty = (j - 1) * (cubeSize + gap);
+                        float tz = k * (cubeSize + gap);
+                        
+                        Matrix4X4<float> translation = Matrix4X4.CreateTranslation(tx, ty, tz);
+                        Matrix4X4<float> rotationZ = Matrix4X4.CreateRotationZ(glRubics[index].rotation.Z * radToDeg);
+                        Matrix4X4<float> rotationMatrix = Matrix4X4<float>.Identity * rotationZ;
+
+                        modelMatrix *= translation;
+                        
+                        SetModelMatrix(modelMatrix);
+                        SetRotationMatrix(rotationMatrix);
+
+
+                        Gl.BindVertexArray(glRubics[index].Vao);
+                        Gl.DrawElements(GLEnum.Triangles, glRubics[index].IndexArrayLength, GLEnum.UnsignedInt, null);
                         Gl.BindVertexArray(0);
                     }
                 }
             }
-
-            Console.WriteLine();
         }
 
-        private static unsafe void SetModelMatrix(Matrix4X4<float> modelMatrix)
+        private static unsafe void SetRotationMatrix(Matrix4X4<float> rotationMatrix)
         {
 
-            int location = Gl.GetUniformLocation(program, ModelMatrixVariableName);
+            int location = Gl.GetUniformLocation(program, RotationMatrixVariableName);
             if (location == -1)
             {
-                throw new Exception($"{ModelMatrixVariableName} uniform not found on shader.");
+                throw new Exception($"{RotationMatrixVariableName} uniform not found on shader.");
             }
 
-            Gl.UniformMatrix4(location, 1, false, (float*)&modelMatrix);
+            Gl.UniformMatrix4(location, 1, false, (float*)&rotationMatrix);
             CheckError();
         }
 
         private static unsafe void SetUpObjects()
         {
-            float[] face0Color = [0.2f, 0.2f, 0.2f, 1.0f];
+            float[] face0Color = [0.0f, 0.0f, 0.0f, 1.0f];
             float[] face1Color = [1.0f, 1.0f, 1.0f, 1.0f];
             float[] face2Color = [1.0f, 1.0f, 0.0f, 1.0f];
             float[] face3Color = [1.0f, 0.37f, 0.08f, 1.0f];
@@ -241,48 +297,57 @@ namespace lab2
                     f5c = face0Color,
                     f6c = face0Color;
 
-                // top
+                // back
                 if (i % 3 == 0)
                 {
-                    f1c = face2Color;
-                }
-
-                // bottom side
-                if (i % 3 == 2)
-                {
-                    f4c = face1Color;
-                }
-
-                // left
-                if (i % 9 < 3)
-                {
-                    f3c = face3Color;
-                }
-
-                // right
-                if (i % 9 > 5)
-                {
-                    f6c = face4Color;
+                    f5c = face6Color;
                 }
 
                 // front
-                if (i >= 18)
+                if (i % 3 == 2)
                 {
                     f2c = face5Color;
                 }
 
-                // back
+                // bottom
+                if (i % 9 < 3)
+                {
+                    f4c = face1Color;
+                }
+
+                // top
+                if (i % 9 > 5)
+                {
+                    f1c = face2Color;
+                }
+
+                // right
+                if (i >= 18)
+                {
+                    f6c = face4Color;
+                }
+
+                // left
                 if (i < 9)
                 {
-                    f5c = face6Color;
+                    f3c = face3Color;
                 }
 
                 glRubics.Add(GlCube.CreateCubeWithFaceColors(Gl, f1c, f2c, f3c, f4c, f5c, f6c));
             }
         }
 
-        private static void Window_Closing()
+        private static unsafe void SetModelMatrix(Matrix4X4<float> modelMatrix)
         {
+
+            int location = Gl.GetUniformLocation(program, ModelMatrixVariableName);
+            if (location == -1)
+            {
+                throw new Exception($"{ModelMatrixVariableName} uniform not found on shader.");
+            }
+
+            Gl.UniformMatrix4(location, 1, false, (float*)&modelMatrix);
+            CheckError();
         }
 
         private static unsafe void SetProjectionMatrix()
@@ -301,7 +366,7 @@ namespace lab2
 
         private static unsafe void SetViewMatrix()
         {
-            var viewMatrix = Matrix4X4.CreateLookAt(cameraDescriptor.Position, cameraDescriptor.Target, cameraDescriptor.UpVector);
+            var viewMatrix = camera.getViewMatrix();
             int location = Gl.GetUniformLocation(program, ViewMatrixVariableName);
 
             if (location == -1)
@@ -318,6 +383,47 @@ namespace lab2
             var error = (ErrorCode)Gl.GetError();
             if (error != ErrorCode.NoError)
                 throw new Exception("GL.GetError() returned " + error.ToString());
+        }
+
+        private static void keyDown(IKeyboard keyboard, Key key, int arg3)
+        {
+            keyPressed = key;
+        }
+
+        private static void keyUp(IKeyboard keyboard, Key key, int arg3)
+        {
+            if (keyPressed == key)
+            {
+                keyPressed = null;
+            }
+        }
+
+        private static void rotateSide(IKeyboard keyboard, Key key, int arg3)
+        {
+            if (rotateLeft || rotateRight)
+            {
+                return;
+            }
+
+            if (key == Key.Left)
+            {
+                rotateLeft = true;
+                currentAngle += 90.0f;
+            }
+
+            else if (key == Key.Right)
+            {
+                rotateRight = true;
+                currentAngle -= 90.0f;
+            }
+        }
+
+        private static void Window_Closing()
+        {
+            for (int i = 0; i < 27; i++)
+            {
+                glRubics[i].ReleaseGlCube();
+            }
         }
     }
 }
