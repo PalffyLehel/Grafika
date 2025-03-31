@@ -73,7 +73,7 @@ namespace lab2
         }
         ";
 
-        static void Main(string[] args)
+        static void Main2(string[] args)
         {
             WindowOptions windowOptions = WindowOptions.Default;
             windowOptions.Title = "2 szeminárium";
@@ -333,7 +333,7 @@ namespace lab2
                     f3c = face3Color;
                 }
 
-                glRubics.Add(GlCube.CreateCubeWithFaceColors(Gl, f1c, f2c, f3c, f4c, f5c, f6c));
+                glRubics.Add(GlCube.CreateCubeWithFaceColors(Gl, f1c, f2c, f3c, f4c, f5c, f6c, i));
             }
         }
 

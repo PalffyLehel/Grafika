@@ -18,11 +18,15 @@ namespace lab2
         public uint Indices { get; }
         public uint IndexArrayLength { get; }
 
+        public int id;
+
         public Vector3D<float> rotation;
+        public Vector3D<float> currentAngle;
+        public int[] directions;
 
         private GL Gl;
 
-        private GlCube(uint vao, uint vertices, uint colors, uint indeces, uint indexArrayLength, GL gl)
+        private GlCube(uint vao, uint vertices, uint colors, uint indeces, uint indexArrayLength, GL gl, int id)
         {
             this.Vao = vao;
             this.Vertices = vertices;
@@ -30,10 +34,35 @@ namespace lab2
             this.Indices = indeces;
             this.IndexArrayLength = indexArrayLength;
             this.Gl = gl;
+            this.id = id;
             rotation = Vector3D<float>.Zero;
+            currentAngle = Vector3D<float>.Zero;
+            directions = [1, 2, 3];
         }
 
-        public static unsafe GlCube CreateCubeWithFaceColors(GL Gl, float[] face1Color, float[] face2Color, float[] face3Color, float[] face4Color, float[] face5Color, float[] face6Color)
+        public int[] getDirs()
+        {
+            int[] dirs = [1, 2, 3];
+            for (int i = 0; i < 3; i++)
+            {
+                if (MathF.Abs(directions[i]) == 1)
+                {
+                    dirs[0] = i + 1;
+                }
+                if (MathF.Abs(directions[i]) == 2)
+                {
+                    dirs[1] = i + 1;
+                }
+                if (MathF.Abs(directions[i]) == 3)
+                {
+                    dirs[2] = i + 1;
+                }
+            }
+
+            return dirs;
+        }
+
+        public static unsafe GlCube CreateCubeWithFaceColors(GL Gl, float[] face1Color, float[] face2Color, float[] face3Color, float[] face4Color, float[] face5Color, float[] face6Color, int id)
         {
             uint vao = Gl.GenVertexArray();
             Gl.BindVertexArray(vao);
@@ -146,7 +175,7 @@ namespace lab2
             Gl.BindBuffer(GLEnum.ArrayBuffer, 0);
             uint indexArrayLength = (uint)indexArray.Length;
 
-            return new GlCube(vao, vertices, colors, indices, indexArrayLength, Gl);
+            return new GlCube(vao, vertices, colors, indices, indexArrayLength, Gl, id);
         }
 
         internal void ReleaseGlCube()
