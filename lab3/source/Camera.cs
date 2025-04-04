@@ -7,7 +7,7 @@ public class Camera
 {
     private static readonly float radToDeg = MathF.PI / 180;
 
-    private Vector3D<float> position;
+    public Vector3D<float> position;
     private Vector3D<float> front;
     private Vector3D<float> up;
     private Vector3D<float> right;

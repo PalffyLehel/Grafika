@@ -2,6 +2,7 @@
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
+using System.Numerics;
 
 namespace lab3.source
 {
@@ -30,6 +31,13 @@ namespace lab3.source
         private const string ModelMatrixVariableName = "uModel";
         private const string ViewMatrixVariableName = "uView";
         private const string ProjectionMatrixVariableName = "uProjection";
+        private const string NormalMatrixVariableName = "uNormal";
+
+        private const string LightColorVariableName = "uLightColor";
+        private const string LightPositionVariableName = "uLightPos";
+        private const string ViewPositionVariableName = "uViewPos";
+        private const string ShinenessVariableName = "uShininess";
+        private static float shininess = 50;
 
         private static readonly string VertexShaderPath = @"../../../shaders\VertexShader.vert";
         private static readonly string FragmentShaderPath = @"../../../shaders/FragmentShader.frag";
@@ -65,13 +73,14 @@ namespace lab3.source
             }
 
             Gl = window.CreateOpenGL();
-            Gl.ClearColor(System.Drawing.Color.White);
+            Gl.ClearColor(0.7f, 0.1f, 0.1f, 1.0f);
 
             SetUpObjects();
 
             LinkProgram();
 
             Gl.Enable(EnableCap.CullFace);
+            Gl.CullFace(TriangleFace.Back);
 
             Gl.Enable(EnableCap.DepthTest);
             Gl.DepthFunc(DepthFunction.Lequal);
@@ -94,27 +103,33 @@ namespace lab3.source
 
         private static unsafe void Window_Render(double deltaTime)
         {
-            Gl.ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             Gl.Clear(ClearBufferMask.ColorBufferBit);
             Gl.Clear(ClearBufferMask.DepthBufferBit);
-
 
             Gl.UseProgram(program);
 
             SetViewMatrix();
             SetProjectionMatrix();
 
+            SetUniform3(LightColorVariableName, new Vector3(1f, 1f, 1f));
+            SetUniform3(LightPositionVariableName, new Vector3(2f, 2f, 2f));
+            SetUniform3(ViewPositionVariableName, new Vector3(camera.position.X, camera.position.Y, camera.position.Z));
+            SetUniform1(ShinenessVariableName, shininess);
+
+
             DrawCube();
         }
 
         private static unsafe void DrawCube()
         {
-            Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(1.0f);
+            Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(0.5f);
 
             SetModelMatrix(modelMatrix);
 
             Gl.BindVertexArray(cube.Vao);
+            Gl.BindBuffer(GLEnum.ElementArrayBuffer, cube.Indices);
             Gl.DrawElements(GLEnum.Triangles, cube.IndexArrayLength, GLEnum.UnsignedInt, null);
+            Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
             Gl.BindVertexArray(0);
         }
 
@@ -141,6 +156,24 @@ namespace lab3.source
             }
 
             Gl.UniformMatrix4(location, 1, false, (float*)&modelMatrix);
+            CheckError();
+
+            location = Gl.GetUniformLocation(program, NormalMatrixVariableName);
+            if (location == -1)
+            {
+                throw new Exception($"{NormalMatrixVariableName} uniform not found on shader.");
+            }
+            var modelMatrixWithoutTranslation = new Matrix4X4<float>(modelMatrix.Row1, modelMatrix.Row2, modelMatrix.Row3, modelMatrix.Row4);
+            modelMatrixWithoutTranslation.M41 = 0;
+            modelMatrixWithoutTranslation.M42 = 0;
+            modelMatrixWithoutTranslation.M43 = 0;
+            modelMatrixWithoutTranslation.M44 = 1;
+
+            Matrix4X4<float> modelInvers;
+            Matrix4X4.Invert<float>(modelMatrixWithoutTranslation, out modelInvers);
+            Matrix3X3<float> normalMatrix = new Matrix3X3<float>(Matrix4X4.Transpose(modelInvers));
+
+            Gl.UniformMatrix3(location, 1, false, (float*)&normalMatrix);
             CheckError();
         }
 
@@ -196,10 +229,7 @@ namespace lab3.source
         {
             uint vshader = Gl.CreateShader(ShaderType.VertexShader);
             uint fshader = Gl.CreateShader(ShaderType.FragmentShader);
-            foreach (var item in Directory.GetFiles("."))
-            {
-                Console.WriteLine(item);
-            };
+            
             if (!File.Exists(VertexShaderPath))
             {
                 throw new Exception("Vertex shader path does not exist!");
@@ -233,8 +263,32 @@ namespace lab3.source
             Gl.DeleteShader(fshader);
         }
 
+        private static unsafe void SetUniform1(string uniformName, float uniformValue)
+        {
+            int location = Gl.GetUniformLocation(program, uniformName);
+            if (location == -1)
+            {
+                throw new Exception($"{uniformName} uniform not found on shader.");
+            }
+
+            Gl.Uniform1(location, uniformValue);
+            CheckError();
+        }
+
+        private static unsafe void SetUniform3(string uniformName, Vector3 uniformValue)
+        {
+            int location = Gl.GetUniformLocation(program, uniformName);
+            if (location == -1)
+            {
+                throw new Exception($"{uniformName} uniform not found on shader.");
+            }
+
+            Gl.Uniform3(location, uniformValue);
+            CheckError();
+        }
         private static void Window_Closing()
         {
+            cube.ReleaseGlCube();
         }
     }
 }

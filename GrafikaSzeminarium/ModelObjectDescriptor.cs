@@ -1,68 +1,34 @@
-﻿using Silk.NET.Maths;
-using Silk.NET.OpenGL;
+﻿using Silk.NET.OpenGL;
+using Silk.NET.Vulkan;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace lab3.source
+namespace GrafikaSzeminarium
 {
-    internal class GlCube
+    internal class ModelObjectDescriptor:IDisposable
     {
-        public uint Vao { get; }
-        public uint Vertices { get; }
-        public uint Colors { get; }
-        public uint Indices { get; }
-        public uint IndexArrayLength { get; }
+        private bool disposedValue;
 
-        public int id;
-        private static int idCounter = 0;
-        
-        public Vector3D<float> rotation;
-        public Vector3D<float> currentAngle;
-        public int[] directions;
+        public uint Vao { get; private set; }
+        public uint Vertices { get; private set; }
+        public uint Colors { get; private set; }
+        public uint Indices { get; private set; }
+        public uint IndexArrayLength { get; private set; }
 
         private GL Gl;
 
-        private GlCube(uint vao, uint vertices, uint colors, uint indeces, uint indexArrayLength, GL gl)
-        {
-            Vao = vao;
-            Vertices = vertices;
-            Colors = colors;
-            Indices = indeces;
-            IndexArrayLength = indexArrayLength;
-            Gl = gl;
-            id = idCounter++;
-            rotation = Vector3D<float>.Zero;
-            currentAngle = Vector3D<float>.Zero;
-            directions = [1, 2, 3];
-        }
-
-        public int[] getDirs()
-        {
-            int[] dirs = [1, 2, 3];
-            for (int i = 0; i < 3; i++)
-            {
-                if (MathF.Abs(directions[i]) == 1)
-                {
-                    dirs[0] = i + 1;
-                }
-                if (MathF.Abs(directions[i]) == 2)
-                {
-                    dirs[1] = i + 1;
-                }
-                if (MathF.Abs(directions[i]) == 3)
-                {
-                    dirs[2] = i + 1;
-                }
-            }
-
-            return dirs;
-        }
-
-        public static unsafe GlCube CreateCubeWithFaceColors(GL Gl, float[] face1Color, float[] face2Color, float[] face3Color, float[] face4Color, float[] face5Color, float[] face6Color)
+        public unsafe static ModelObjectDescriptor CreateCube(GL Gl)
         {
             uint vao = Gl.GenVertexArray();
             Gl.BindVertexArray(vao);
 
             // counter clockwise is front facing
             float[] vertexArray = new float[] {
+                // top face
                 -0.5f, 0.5f, 0.5f, 0f, 1f, 0f,
                 0.5f, 0.5f, 0.5f, 0f, 1f, 0f,
                 0.5f, 0.5f, -0.5f, 0f, 1f, 0f,
@@ -151,13 +117,14 @@ namespace lab3.source
                 20, 23, 22
             };
 
-            uint offsetPos = 0;
-            uint offsetNormals = offsetPos + 3 * sizeof(float);
-            uint vertexSize = offsetNormals + 3 * sizeof(float);
-
             uint vertices = Gl.GenBuffer();
             Gl.BindBuffer(GLEnum.ArrayBuffer, vertices);
             Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)vertexArray.AsSpan(), GLEnum.StaticDraw);
+            // 0 is position
+            // 2 is normals
+            uint offsetPos = 0;
+            uint offsetNormals = offsetPos + 3 * sizeof(float);
+            uint vertexSize = offsetNormals + 3 * sizeof(float);
             Gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, vertexSize, (void*)offsetPos);
             Gl.EnableVertexAttribArray(0);
             Gl.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, true, vertexSize, (void*)offsetNormals);
@@ -167,6 +134,7 @@ namespace lab3.source
             uint colors = Gl.GenBuffer();
             Gl.BindBuffer(GLEnum.ArrayBuffer, colors);
             Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)colorArray.AsSpan(), GLEnum.StaticDraw);
+            // 1 is color
             Gl.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 0, null);
             Gl.EnableVertexAttribArray(1);
             Gl.BindBuffer(GLEnum.ArrayBuffer, 0);
@@ -174,21 +142,46 @@ namespace lab3.source
             uint indices = Gl.GenBuffer();
             Gl.BindBuffer(GLEnum.ElementArrayBuffer, indices);
             Gl.BufferData(GLEnum.ElementArrayBuffer, (ReadOnlySpan<uint>)indexArray.AsSpan(), GLEnum.StaticDraw);
+            Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
 
-            // release array buffer
-            Gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-            uint indexArrayLength = (uint)indexArray.Length;
+            return new ModelObjectDescriptor() {Vao= vao, Vertices = vertices, Colors = colors, Indices = indices, IndexArrayLength = (uint)indexArray.Length, Gl = Gl};
 
-            return new GlCube(vao, vertices, colors, indices, indexArrayLength, Gl);
         }
 
-        internal void ReleaseGlCube()
+        protected virtual void Dispose(bool disposing)
         {
-            // always unbound the vertex buffer first, so no halfway results are displayed by accident
-            Gl.DeleteBuffer(Vertices);
-            Gl.DeleteBuffer(Colors);
-            Gl.DeleteBuffer(Indices);
-            Gl.DeleteVertexArray(Vao);
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+
+
+                // always unbound the vertex buffer first, so no halfway results are displayed by accident
+                Gl.DeleteBuffer(Vertices);
+                Gl.DeleteBuffer(Colors);
+                Gl.DeleteBuffer(Indices);
+                Gl.DeleteVertexArray(Vao);
+
+                disposedValue = true;
+            }
+        }
+
+        ~ModelObjectDescriptor()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
