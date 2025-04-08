@@ -12,7 +12,7 @@ namespace lab3.source
                                                   new Vector3D<float>(0.0f, 1.0f, 0.0f),
                                                   -90.0f, 0.0f);
 
-        private static GlCube cube;
+        private static List<GlRectangle> rects;
         private static readonly float degToRad = MathF.PI / 180;
 
         private static IMouse mouse;
@@ -29,6 +29,7 @@ namespace lab3.source
         private static uint program;
 
         private const string ModelMatrixVariableName = "uModel";
+        private const string RotationMatrixVariableName = "uRotation";
         private const string ViewMatrixVariableName = "uView";
         private const string ProjectionMatrixVariableName = "uProjection";
         private const string NormalMatrixVariableName = "uNormal";
@@ -73,14 +74,12 @@ namespace lab3.source
             }
 
             Gl = window.CreateOpenGL();
-            Gl.ClearColor(0.7f, 0.1f, 0.1f, 1.0f);
+            Gl.ClearColor(0.7f, 0.7f, 0.7f, 1.0f);
 
             SetUpObjects();
 
             LinkProgram();
 
-            Gl.Enable(EnableCap.CullFace);
-            Gl.CullFace(TriangleFace.Back);
 
             Gl.Enable(EnableCap.DepthTest);
             Gl.DepthFunc(DepthFunction.Lequal);
@@ -116,12 +115,48 @@ namespace lab3.source
             SetUniform3(ViewPositionVariableName, new Vector3(camera.position.X, camera.position.Y, camera.position.Z));
             SetUniform1(ShinenessVariableName, shininess);
 
+            DrawRects();
+        }
 
-            DrawCube();
+        private static unsafe void DrawRects()
+        {
+            for (int i = 0; i < 18; i++)
+            {
+
+            }
+            Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(0.25f);
+            Matrix4X4<float> scaleMatrix = Matrix4X4.CreateScale(1.0f, 2.0f, 1.0f);
+            Matrix4X4<float> rotationMatrix = Matrix4X4<float>.Identity;
+            modelMatrix *= scaleMatrix;
+
+            SetModelMatrix(modelMatrix);
+            SetRotationMatrix(rotationMatrix);
+
+            Gl.BindVertexArray(rects[0].Vao);
+            Gl.BindBuffer(GLEnum.ElementArrayBuffer, rects[0].Indices);
+            Gl.DrawElements(GLEnum.Triangles, rects[0].IndexArrayLength, GLEnum.UnsignedInt, null);
+            Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
+            Gl.BindVertexArray(0);
+
+
+            Matrix4X4<float> rotationY = Matrix4X4.CreateRotationY(20 * degToRad);
+            Matrix4X4<float> translation = Matrix4X4.CreateTranslation(0.488f, 0.0f, 0.25f * MathF.Sin(20 * degToRad));
+            modelMatrix *= translation;
+            rotationMatrix *= rotationY;
+            SetModelMatrix(modelMatrix);
+            SetRotationMatrix(rotationMatrix);
+
+
+            Gl.BindVertexArray(rects[1].Vao);
+            Gl.BindBuffer(GLEnum.ElementArrayBuffer, rects[1].Indices);
+            Gl.DrawElements(GLEnum.Triangles, rects[1].IndexArrayLength, GLEnum.UnsignedInt, null);
+            Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
+            Gl.BindVertexArray(0);
         }
 
         private static unsafe void DrawCube()
         {
+            /*
             Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(0.5f);
 
             SetModelMatrix(modelMatrix);
@@ -131,20 +166,27 @@ namespace lab3.source
             Gl.DrawElements(GLEnum.Triangles, cube.IndexArrayLength, GLEnum.UnsignedInt, null);
             Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
             Gl.BindVertexArray(0);
+            */
         }
 
         private static unsafe void SetUpObjects()
         {
-            float[] face0Color = [0.0f, 0.0f, 0.0f, 1.0f];
-            float[] face1Color = [1.0f, 1.0f, 1.0f, 1.0f];
-            float[] face2Color = [1.0f, 1.0f, 0.0f, 1.0f];
-            float[] face3Color = [1.0f, 0.37f, 0.08f, 1.0f];
-            float[] face4Color = [1.0f, 0.0f, 0.0f, 1.0f];
-            float[] face5Color = [0.0f, 1.0f, 0.0f, 1.0f];
-            float[] face6Color = [0.0f, 0.0f, 1.0f, 1.0f];
-
-            cube = GlCube.CreateCubeWithFaceColors(Gl, face1Color, face2Color, face3Color, face4Color, face5Color, face6Color);
+            rects = [GlRectangle.CreateRect(Gl)];
+            rects.Add(GlRectangle.CreateRect(Gl));
         }
+        private static unsafe void SetRotationMatrix(Matrix4X4<float> rotationMatrix)
+        {
+
+            int location = Gl.GetUniformLocation(program, RotationMatrixVariableName);
+            if (location == -1)
+            {
+                throw new Exception($"{RotationMatrixVariableName} uniform not found on shader.");
+            }
+
+            Gl.UniformMatrix4(location, 1, false, (float*)&rotationMatrix);
+            CheckError();
+        }
+
 
         private static unsafe void SetModelMatrix(Matrix4X4<float> modelMatrix)
         {
@@ -288,7 +330,10 @@ namespace lab3.source
         }
         private static void Window_Closing()
         {
-            cube.ReleaseGlCube();
+            rects.ForEach(rect =>
+            {
+                rect.ReleaseGlRect();
+            });
         }
     }
 }
