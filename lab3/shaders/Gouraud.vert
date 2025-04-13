@@ -1,12 +1,15 @@
 ﻿#version 330 core
 layout (location = 0) in vec3 vPos;
 layout (location = 1) in vec4 vCol;
-layout (location = 2) in vec3 vNormal;
+layout (location = 2) in vec4 vNormal;
 
 uniform mat4 uModel;
 uniform mat3 uNormal;
 uniform mat4 uView;
 uniform mat4 uProjection;
+uniform mat3 uNormalRotation1;
+uniform mat3 uNormalRotation2;
+
 
 uniform vec3 uLightColor;
 uniform vec3 uLightPos;
@@ -19,7 +22,18 @@ out vec4 outCol;
 void main()
 {
 	outCol = vCol;
-    vec3 outNormal = uNormal * vNormal;
+
+    vec3 norm2 = vec3(vNormal.x, vNormal.y, vNormal.z);
+    vec3 outNormal;
+    if (vNormal.w == 0.0f)
+    {
+        outNormal = uNormalRotation2 * uNormal * norm2;
+    }
+    else
+    {
+        outNormal = uNormalRotation1 * uNormal * norm2;
+    }
+
     vec3 outWorldPosition = vec3(uModel * vec4(vPos.x, vPos.y, vPos.z, 1.0));
 
     vec3 ambient = uLightStrength.x * uLightColor;

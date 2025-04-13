@@ -33,10 +33,10 @@ public class GlRectangle
 
         // counter clockwise is front facing
         float[] vertexArray = new float[] {
-                 -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                 -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                 -1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+                 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+                 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+                 -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
             };
 
         float[] colorArray = new float[] {
@@ -53,14 +53,14 @@ public class GlRectangle
 
         uint offsetPos = 0;
         uint offsetNormals = offsetPos + 3 * sizeof(float);
-        uint vertexSize = offsetNormals + 3 * sizeof(float);
+        uint vertexSize = offsetNormals + 4 * sizeof(float);
 
         uint vertices = Gl.GenBuffer();
         Gl.BindBuffer(GLEnum.ArrayBuffer, vertices);
         Gl.BufferData(GLEnum.ArrayBuffer, (ReadOnlySpan<float>)vertexArray.AsSpan(), GLEnum.StaticDraw);
         Gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, vertexSize, (void*)offsetPos);
         Gl.EnableVertexAttribArray(0);
-        Gl.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, true, vertexSize, (void*)offsetNormals);
+        Gl.VertexAttribPointer(2, 4, VertexAttribPointerType.Float, true, vertexSize, (void*)offsetNormals);
         Gl.EnableVertexAttribArray(2);
         Gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 

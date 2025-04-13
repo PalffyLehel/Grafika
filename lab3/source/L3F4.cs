@@ -33,7 +33,8 @@ namespace lab3.source
         private const string ViewMatrixVariableName = "uView";
         private const string ProjectionMatrixVariableName = "uProjection";
         private const string NormalMatrixVariableName = "uNormal";
-        private const string NormalRotationMatrixVariableName = "uNormalRotation";
+        private const string NormalRotationMatrixVariableName1 = "uNormalRotation1";
+        private const string NormalRotationMatrixVariableName2 = "uNormalRotation2";
 
         private const string LightColorVariableName = "uLightColor";
         private const string LightPositionVariableName = "uLightPos";
@@ -144,7 +145,7 @@ namespace lab3.source
 
             SetLightStrength(lightStr.X, lightStr.Y, lightStr.Z, g ? p2 : p1);
             SetUniform3(LightColorVariableName, new Vector3(1f, 1f, 1f), g ? p2 : p1);
-            SetUniform3(LightPositionVariableName, new Vector3(1.0f, 1.0f, 1.0f), g ? p2 : p1);
+            SetUniform3(LightPositionVariableName, new Vector3(0.5f, 0.5f, 0.5f), g ? p2 : p1);
             SetUniform3(ViewPositionVariableName, new Vector3(camera.position.X, camera.position.Y, camera.position.Z), g ? p2 : p1);
             SetUniform1(ShinenessVariableName, shininess, g ? p2 : p1);
 
@@ -166,9 +167,20 @@ namespace lab3.source
             Matrix4X4<float> rotationY = Matrix4X4.CreateRotationY(20 * degToRad);
             modelMatrix *= scaleMatrix * translation * trans;
 
-            Matrix4X4<float> normalRotation = Matrix4X4<float>.Identity;
+            Matrix4X4<float> normalRotation1 = Matrix4X4<float>.Identity * Matrix4X4.CreateRotationY(10 * degToRad);
+            Matrix4X4<float> normalRotation2 = Matrix4X4<float>.Identity * Matrix4X4.CreateRotationY(-10 * degToRad);
 
             SetModelMatrix(modelMatrix, g ? p2 : p1);
+            if (enhanceNormals)
+            {
+                SetNormalRotationMatrix1(normalRotation1, g ? p2 : p1);
+                SetNormalRotationMatrix2(normalRotation2, g ? p2 : p1);
+            }
+            else
+            {
+                SetNormalRotationMatrix1(Matrix4X4<float>.Identity, g ? p2 : p1);
+                SetNormalRotationMatrix2(Matrix4X4<float>.Identity, g ? p2 : p1);
+            }
 
             Gl.BindVertexArray(rects[0].Vao);
             Gl.BindBuffer(GLEnum.ElementArrayBuffer, rects[0].Indices);
@@ -184,8 +196,15 @@ namespace lab3.source
 
                 if (enhanceNormals)
                 {
-                    normalRotation = Matrix4X4<float>.Identity * Matrix4X4.CreateRotationY(i * 10 * degToRad);
+                    SetNormalRotationMatrix1(normalRotation1, g ? p2 : p1);
+                    SetNormalRotationMatrix2(normalRotation2, g ? p2 : p1);
                 }
+                else
+                {
+                    SetNormalRotationMatrix1(Matrix4X4<float>.Identity, g ? p2 : p1);
+                    SetNormalRotationMatrix2(Matrix4X4<float>.Identity, g ? p2 : p1);
+                }
+
 
                 Gl.BindVertexArray(rects[i].Vao);
                 Gl.BindBuffer(GLEnum.ElementArrayBuffer, rects[i].Indices);
@@ -215,12 +234,31 @@ namespace lab3.source
             }
         }
 
-        private static unsafe void SetNormalRotationMatrix(Matrix4X4<float> normalRotation, uint p)
+        private static unsafe void SetNormalRotationMatrix1(Matrix4X4<float> normalRotation, uint p)
         {
-            int location = Gl.GetUniformLocation(p, NormalRotationMatrixVariableName);
+            int location = Gl.GetUniformLocation(p, NormalRotationMatrixVariableName2);
             if (location == -1)
             {
-                throw new Exception($"{NormalRotationMatrixVariableName} uniform not found on shader.");
+                throw new Exception($"{NormalRotationMatrixVariableName2} uniform not found on shader.");
+            }
+
+            normalRotation.M41 = 0;
+            normalRotation.M42 = 0;
+            normalRotation.M43 = 0;
+            normalRotation.M44 = 1;
+
+
+            Matrix3X3<float> normalMatrix = new Matrix3X3<float>(normalRotation);
+            Gl.UniformMatrix3(location, 1, false, (float*)&normalMatrix);
+            CheckError();
+        }
+
+        private static unsafe void SetNormalRotationMatrix2(Matrix4X4<float> normalRotation, uint p)
+        {
+            int location = Gl.GetUniformLocation(p, NormalRotationMatrixVariableName1);
+            if (location == -1)
+            {
+                throw new Exception($"{NormalRotationMatrixVariableName1} uniform not found on shader.");
             }
 
             normalRotation.M41 = 0;
