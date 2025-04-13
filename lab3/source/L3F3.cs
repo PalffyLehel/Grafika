@@ -7,13 +7,13 @@ using System.Numerics;
 
 namespace lab3.source
 {
-    public static class L3F2
+    public static class L3F3
     {
         private static Camera camera = new Camera(new Vector3D<float>(0.0f, 0.0f, 2.0f),
                                                   new Vector3D<float>(0.0f, 1.0f, 0.0f),
                                                   -90.0f, 0.0f);
 
-        private static GlCube cube;
+        private static List<GlCube> glRubics;
         private static readonly float degToRad = MathF.PI / 180;
         private static Vector3 faceColor;
 
@@ -30,11 +30,20 @@ namespace lab3.source
 
         private static uint program;
 
+        private const float gap = 0.02f;
+        private const float cubeSize = 0.25f;
+        private static readonly float rotationSpeed = 40.0f;
+
+        private static bool rotateLeft;
+        private static bool rotateRight;
+        private static float currentAngle;
+
         private const string ModelMatrixVariableName = "uModel";
         private const string ViewMatrixVariableName = "uView";
         private const string ProjectionMatrixVariableName = "uProjection";
         private const string NormalMatrixVariableName = "uNormal";
         private const string NormalRotationMatrixVariableName = "uNormalRotation";
+        private const string RotationMatrixVariableName = "uRotation";
 
         private const string LightColorVariableName = "uLightColor";
         private const string LightPositionVariableName = "uLightPos";
@@ -48,21 +57,25 @@ namespace lab3.source
 
         private static ImGuiController controller;
         private static Vector3 lightStr;
-        private static Vector3 backLight;
+        private static Vector3 lightPos;
         private static bool stop = false;
         private static int szinid = 0;
         private static string[] szinek = ["piros", "kek", "zold", "sarga", "narancs", "feher"];
 
 
-        static void Main2(string[] args)
+        static void Main(string[] args)
         {
             WindowOptions windowOptions = WindowOptions.Default;
             windowOptions.Title = "lab3";
             windowOptions.Size = new Vector2D<int>(1000, 1000);
 
             lightStr = new Vector3(0.3f, 0.6f, 0.9f);
-            backLight = Vector3.One;
+            lightPos = new Vector3(1.0f, 1.0f, 1.0f);
             faceColor = new Vector3(1.0f, 0.0f, 0.0f);
+
+            rotateLeft = false;
+            rotateRight = false;
+            currentAngle = 0.0f;
 
             // on some systems there is no depth buffer by default, so we need to make sure one is created
             windowOptions.PreferredDepthBufferBits = 24;
@@ -117,6 +130,54 @@ namespace lab3.source
                 camera.processMouseMovement(previousPos.X - mouse.Position.X, previousPos.Y - mouse.Position.Y, true);
             }
             previousPos = new Vector2D<float>(mouse.Position.X, mouse.Position.Y);
+
+            if (rotateLeft)
+            {
+                for (int i = 0; i < 27; i++)
+                {
+                    if (i % 3 == 2)
+                    {
+                        glRubics[i].rotation.Z += (float)deltaTime * rotationSpeed;
+                    }
+                }
+
+                if (MathF.Abs(glRubics[2].rotation.Z - currentAngle) < 0.1)
+                {
+                    for (int i = 0; i < 27; i++)
+                    {
+                        if (i % 3 == 2)
+                        {
+                            glRubics[i].rotation.Z = currentAngle;
+                        }
+                    }
+
+                    rotateLeft = false;
+                }
+            }
+
+            if (rotateRight)
+            {
+                for (int i = 0; i < 27; i++)
+                {
+                    if (i % 3 == 2)
+                    {
+                        glRubics[i].rotation.Z -= (float)deltaTime * rotationSpeed;
+                    }
+                }
+
+                if (MathF.Abs(glRubics[2].rotation.Z - currentAngle) < 0.1)
+                {
+                    for (int i = 0; i < 27; i++)
+                    {
+                        if (i % 3 == 2)
+                        {
+                            glRubics[i].rotation.Z = currentAngle;
+                        }
+                    }
+
+                    rotateRight = false;
+                }
+            }
         }
 
         private static unsafe void Window_Render(double deltaTime)
@@ -124,12 +185,30 @@ namespace lab3.source
             controller.Update((float)deltaTime);
 
             ImGuiNET.ImGui.SliderFloat3("fenyerosseg", ref lightStr, 0, 1);
-            ImGuiNET.ImGui.SliderFloat3("hatterszin", ref backLight, 0, 1);
-            ImGuiNET.ImGui.Combo("oldalszin", ref szinid, szinek, 6);
+            ImGuiNET.ImGui.InputFloat3("pozicio", ref lightPos);
+            if (ImGuiNET.ImGui.ArrowButton("bal", ImGuiNET.ImGuiDir.Left))
+            {
+                if (rotateLeft || rotateRight)
+                {
+                    return;
+                }
 
-            SetUpObjects();
+                rotateLeft = true;
+                currentAngle += 90.0f;
+            }
 
-            Gl.ClearColor(backLight.X, backLight.Y, backLight.Z, 1.0f);
+            if(ImGuiNET.ImGui.ArrowButton("jobb", ImGuiNET.ImGuiDir.Right))
+            {
+                if (rotateLeft || rotateRight)
+                {
+                    return;
+                }
+
+                rotateRight = true;
+                currentAngle -= 90.0f;
+            }
+
+            Gl.ClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 
             Gl.Clear(ClearBufferMask.ColorBufferBit);
             Gl.Clear(ClearBufferMask.DepthBufferBit);
@@ -141,26 +220,13 @@ namespace lab3.source
 
             SetLightStrength(lightStr.X, lightStr.Y, lightStr.Z);
             SetUniform3(LightColorVariableName, new Vector3(1f, 1f, 1f));
-            SetUniform3(LightPositionVariableName, new Vector3(1.0f, 1.0f, 1.0f));
+            SetUniform3(LightPositionVariableName, lightPos);
             SetUniform3(ViewPositionVariableName, new Vector3(camera.position.X, camera.position.Y, camera.position.Z));
             SetUniform1(ShinenessVariableName, shininess);
-            DrawCube();
 
+            DrawRubicsCube();
 
             controller.Render();
-        }
-
-        private static unsafe void DrawCube()
-        {
-            Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(0.5f);
-
-            SetModelMatrix(modelMatrix);
-
-            Gl.BindVertexArray(cube.Vao);
-            Gl.BindBuffer(GLEnum.ElementArrayBuffer, cube.Indices);
-            Gl.DrawElements(GLEnum.Triangles, cube.IndexArrayLength, GLEnum.UnsignedInt, null);
-            Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
-            Gl.BindVertexArray(0);
         }
 
         private static unsafe void SetLightStrength(float ambientStrength, float diffuseStrenth, float specularStrength)
@@ -175,35 +241,114 @@ namespace lab3.source
             CheckError();
         }
 
-        private static unsafe void SetUpObjects()
+        private static unsafe void DrawRubicsCube()
         {
-            float[] otherFaceColor = [1.0f, 0.0f, 0.0f, 1.0f];
-            switch(szinid)
+            for (int i = 0; i < 3; i++)
             {
-                case 0:
-                    faceColor = new Vector3(1.0f, 0.0f, 0.0f);
-                    break;
-                case 1:
-                    faceColor = new Vector3(0.0f, 0.0f, 1.0f);
-                    break;
-                case 2:
-                    faceColor = new Vector3(0.0f, 1.0f, 0.0f);
-                    break;
-                case 3:
-                    faceColor = new Vector3(1.0f, 1.0f, 0.0f);
-                    break;
-                case 4:
-                    faceColor = new Vector3(1.0f, 0.37f, 0.08f);
-                    break;
-                case 5:
-                    faceColor = new Vector3(1.0f, 1.0f, 1.0f);
-                    break;
+                for (int j = 0; j < 3; j++)
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        int index = i * 9 + j * 3 + k;
+
+                        Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(cubeSize);
+
+                        float tx = (i - 1) * (cubeSize + gap);
+                        float ty = (j - 1) * (cubeSize + gap);
+                        float tz = k * (cubeSize + gap);
+
+                        Matrix4X4<float> translation = Matrix4X4.CreateTranslation(tx, ty, tz);
+                        Matrix4X4<float> rotationZ = Matrix4X4.CreateRotationZ(glRubics[index].rotation.Z * degToRad);
+                        Matrix4X4<float> rotationMatrix = Matrix4X4<float>.Identity * rotationZ;
+
+                        modelMatrix *= translation;
+
+                        SetModelMatrix(modelMatrix);
+                        SetRotationMatrix(rotationMatrix);
+
+
+                        Gl.BindVertexArray(glRubics[index].Vao);
+                        Gl.DrawElements(GLEnum.Triangles, glRubics[index].IndexArrayLength, GLEnum.UnsignedInt, null);
+                        Gl.BindVertexArray(0);
+                    }
+                }
+            }
+        }
+
+        private static unsafe void SetRotationMatrix(Matrix4X4<float> rotationMatrix)
+        {
+
+            int location = Gl.GetUniformLocation(program, RotationMatrixVariableName);
+            if (location == -1)
+            {
+                throw new Exception($"{RotationMatrixVariableName} uniform not found on shader.");
             }
 
-            Console.WriteLine(szinid);
-
-            cube = GlCube.CreateCubeWithFaceColors(Gl, otherFaceColor, faceColor, otherFaceColor, otherFaceColor, otherFaceColor, otherFaceColor);
+            Gl.UniformMatrix4(location, 1, false, (float*)&rotationMatrix);
+            CheckError();
         }
+        
+        private static unsafe void SetUpObjects()
+        {
+            float[] face0Color = [0.0f, 0.0f, 0.0f, 1.0f];
+            float[] face1Color = [1.0f, 1.0f, 1.0f, 1.0f];
+            float[] face2Color = [1.0f, 1.0f, 0.0f, 1.0f];
+            float[] face3Color = [1.0f, 0.37f, 0.08f, 1.0f];
+            float[] face4Color = [1.0f, 0.0f, 0.0f, 1.0f];
+            float[] face5Color = [0.0f, 1.0f, 0.0f, 1.0f];
+            float[] face6Color = [0.0f, 0.0f, 1.0f, 1.0f];
+
+            glRubics = new List<GlCube>();
+            for (int i = 0; i < 27; i++)
+            {
+                float[]
+                    f1c = face0Color,
+                    f2c = face0Color,
+                    f3c = face0Color,
+                    f4c = face0Color,
+                    f5c = face0Color,
+                    f6c = face0Color;
+
+                // back
+                if (i % 3 == 0)
+                {
+                    f5c = face6Color;
+                }
+
+                // front
+                if (i % 3 == 2)
+                {
+                    f2c = face5Color;
+                }
+
+                // bottom
+                if (i % 9 < 3)
+                {
+                    f4c = face1Color;
+                }
+
+                // top
+                if (i % 9 > 5)
+                {
+                    f1c = face2Color;
+                }
+
+                // right
+                if (i >= 18)
+                {
+                    f6c = face4Color;
+                }
+
+                // left
+                if (i < 9)
+                {
+                    f3c = face3Color;
+                }
+
+                glRubics.Add(GlCube.CreateCubeWithFaceColors(Gl, f1c, f2c, f3c, f4c, f5c, f6c));
+            }
+        }
+
 
         private static unsafe void SetNormalRotationMatrix(Matrix4X4<float> normalRotation)
         {
@@ -371,7 +516,10 @@ namespace lab3.source
         }
         private static void Window_Closing()
         {
-            cube.ReleaseGlCube();
+            foreach (var item in glRubics)
+            {
+                item.ReleaseGlCube();
+            }
         }
     }
 }
