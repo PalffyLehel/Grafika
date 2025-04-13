@@ -236,10 +236,10 @@ namespace lab3.source
 
         private static unsafe void SetNormalRotationMatrix1(Matrix4X4<float> normalRotation, uint p)
         {
-            int location = Gl.GetUniformLocation(p, NormalRotationMatrixVariableName2);
+            int location = Gl.GetUniformLocation(p, NormalRotationMatrixVariableName1);
             if (location == -1)
             {
-                throw new Exception($"{NormalRotationMatrixVariableName2} uniform not found on shader.");
+                throw new Exception($"{NormalRotationMatrixVariableName1} uniform not found on shader.");
             }
 
             normalRotation.M41 = 0;
@@ -255,10 +255,10 @@ namespace lab3.source
 
         private static unsafe void SetNormalRotationMatrix2(Matrix4X4<float> normalRotation, uint p)
         {
-            int location = Gl.GetUniformLocation(p, NormalRotationMatrixVariableName1);
+            int location = Gl.GetUniformLocation(p, NormalRotationMatrixVariableName2);
             if (location == -1)
             {
-                throw new Exception($"{NormalRotationMatrixVariableName1} uniform not found on shader.");
+                throw new Exception($"{NormalRotationMatrixVariableName2} uniform not found on shader.");
             }
 
             normalRotation.M41 = 0;

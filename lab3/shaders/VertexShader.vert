@@ -19,7 +19,7 @@ void main()
     outCol = vCol;
 
     vec3 norm = vec3(vNormal.x, vNormal.y, vNormal.z);
-    if (vNormal.w == 0.0f)
+    if (vNormal.w == 1.0f)
     {
         outNormal = uNormalRotation2 * uNormal * norm;
     }
