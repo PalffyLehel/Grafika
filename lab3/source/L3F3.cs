@@ -141,7 +141,7 @@ namespace lab3.source
                     }
                 }
 
-                if (MathF.Abs(glRubics[2].rotation.Z - currentAngle) < 0.1)
+                if (MathF.Abs(glRubics[2].rotation.Z - currentAngle) < 1)
                 {
                     for (int i = 0; i < 27; i++)
                     {
@@ -165,7 +165,7 @@ namespace lab3.source
                     }
                 }
 
-                if (MathF.Abs(glRubics[2].rotation.Z - currentAngle) < 0.1)
+                if (MathF.Abs(glRubics[2].rotation.Z - currentAngle) < 1)
                 {
                     for (int i = 0; i < 27; i++)
                     {

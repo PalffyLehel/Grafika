@@ -7,6 +7,7 @@ uniform mat4 uModel;
 uniform mat3 uNormal;
 uniform mat4 uView;
 uniform mat4 uProjection;
+uniform mat4 uRotation;
 
 out vec4 outCol;
 out vec3 outNormal;
@@ -17,5 +18,5 @@ void main()
 	outCol = vCol;
     outNormal = uNormal * vNormal;
     outWorldPosition = vec3(uModel * vec4(vPos.x, vPos.y, vPos.z, 1.0));
-    gl_Position = uProjection * uView * uModel * vec4(vPos.x, vPos.y, vPos.z, 1.0);
+    gl_Position = uProjection * uView * uRotation * uModel * vec4(vPos.x, vPos.y, vPos.z, 1.0);
 }

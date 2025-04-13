@@ -57,7 +57,7 @@ namespace lab3.source
             return dirs;
         }
 
-        public static unsafe GlCube CreateCubeWithFaceColors(GL Gl, float[] face1Color, Vector3 face2Color, float[] face3Color, float[] face4Color, float[] face5Color, float[] face6Color)
+        public static unsafe GlCube CreateCubeWithFaceColors(GL Gl, float[] face1Color, float[] face2Color, float[] face3Color, float[] face4Color, float[] face5Color, float[] face6Color)
         {
             uint vao = Gl.GenVertexArray();
             Gl.BindVertexArray(vao);
@@ -100,18 +100,17 @@ namespace lab3.source
                 0.5f, -0.5f, 0.5f,1f, 0f, 0f,
             };
 
-            float[] cucc = [face2Color.X, face2Color.Y, face2Color.Z, 1.0f];
             List<float> colorsList = new List<float>();
             colorsList.AddRange(face1Color);
             colorsList.AddRange(face1Color);
             colorsList.AddRange(face1Color);
             colorsList.AddRange(face1Color);
-            
-            colorsList.AddRange(cucc);
-            colorsList.AddRange(cucc);
-            colorsList.AddRange(cucc);
-            colorsList.AddRange(cucc);
-            
+
+            colorsList.AddRange(face2Color);
+            colorsList.AddRange(face2Color);
+            colorsList.AddRange(face2Color);
+            colorsList.AddRange(face2Color);
+
             colorsList.AddRange(face3Color);
             colorsList.AddRange(face3Color);
             colorsList.AddRange(face3Color);

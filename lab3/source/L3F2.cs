@@ -202,7 +202,7 @@ namespace lab3.source
 
             Console.WriteLine(szinid);
 
-            cube = GlCube.CreateCubeWithFaceColors(Gl, otherFaceColor, faceColor, otherFaceColor, otherFaceColor, otherFaceColor, otherFaceColor);
+            //cube = GlCube.CreateCubeWithFaceColors(Gl, otherFaceColor, otherFaceColor, otherFaceColor, otherFaceColor, otherFaceColor, otherFaceColor);
         }
 
         private static unsafe void SetNormalRotationMatrix(Matrix4X4<float> normalRotation)
