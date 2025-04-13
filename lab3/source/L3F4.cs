@@ -58,7 +58,7 @@ namespace lab3.source
         private static string[] szinek = ["piros", "kek", "zold", "sarga", "narancs", "feher"];
 
 
-        static void Main(string[] args)
+        static void Main4(string[] args)
         {
             WindowOptions windowOptions = WindowOptions.Default;
             windowOptions.Title = "lab3";
