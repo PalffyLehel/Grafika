@@ -1,19 +1,21 @@
 ﻿using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
+using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
 using System.Numerics;
 
 namespace lab3.source
 {
-    public static class L3F1
+    public static class L3F2
     {
         private static Camera camera = new Camera(new Vector3D<float>(0.0f, 0.0f, 2.0f),
                                                   new Vector3D<float>(0.0f, 1.0f, 0.0f),
                                                   -90.0f, 0.0f);
 
-        private static List<GlRectangle> rects;
+        private static GlCube cube;
         private static readonly float degToRad = MathF.PI / 180;
+        private static Vector3 faceColor;
 
         private static IMouse mouse;
         private static Vector2D<float> previousPos;
@@ -38,16 +40,29 @@ namespace lab3.source
         private const string LightPositionVariableName = "uLightPos";
         private const string ViewPositionVariableName = "uViewPos";
         private const string ShinenessVariableName = "uShininess";
+        private const string LightStrenghtVectorName = "uLightStrength";
         private static float shininess = 50;
 
         private static readonly string VertexShaderPath = @"../../../shaders\VertexShader.vert";
         private static readonly string FragmentShaderPath = @"../../../shaders/FragmentShader.frag";
 
-        static void Main1(string[] args)
+        private static ImGuiController controller;
+        private static Vector3 lightStr;
+        private static Vector3 backLight;
+        private static bool stop = false;
+        private static int szinid = 0;
+        private static string[] szinek = ["piros", "kek", "zold", "sarga", "narancs", "feher"];
+
+
+        static void Main(string[] args)
         {
             WindowOptions windowOptions = WindowOptions.Default;
             windowOptions.Title = "lab3";
             windowOptions.Size = new Vector2D<int>(1000, 1000);
+
+            lightStr = new Vector3(0.3f, 0.6f, 0.9f);
+            backLight = Vector3.One;
+            faceColor = new Vector3(1.0f, 0.0f, 0.0f);
 
             // on some systems there is no depth buffer by default, so we need to make sure one is created
             windowOptions.PreferredDepthBufferBits = 24;
@@ -74,15 +89,16 @@ namespace lab3.source
             }
 
             Gl = window.CreateOpenGL();
-            Gl.ClearColor(0.7f, 0.7f, 0.7f, 1.0f);
 
-            rects = new List<GlRectangle>();
+            controller = new ImGuiController(Gl, window, inputContext);
+
             SetUpObjects();
 
             LinkProgram();
 
             Gl.Enable(EnableCap.DepthTest);
             Gl.DepthFunc(DepthFunction.Lequal);
+
         }
 
 
@@ -96,12 +112,25 @@ namespace lab3.source
                 camera.keyDown(keyPressed);
             }
 
-            camera.processMouseMovement(previousPos.X - mouse.Position.X, previousPos.Y - mouse.Position.Y, true);
+            if (!stop)
+            {
+                camera.processMouseMovement(previousPos.X - mouse.Position.X, previousPos.Y - mouse.Position.Y, true);
+            }
             previousPos = new Vector2D<float>(mouse.Position.X, mouse.Position.Y);
         }
 
         private static unsafe void Window_Render(double deltaTime)
         {
+            controller.Update((float)deltaTime);
+
+            ImGuiNET.ImGui.SliderFloat3("fenyerosseg", ref lightStr, 0, 1);
+            ImGuiNET.ImGui.SliderFloat3("hatterszin", ref backLight, 0, 1);
+            ImGuiNET.ImGui.Combo("oldalszin", ref szinid, szinek, 6);
+
+            SetUpObjects();
+
+            Gl.ClearColor(backLight.X, backLight.Y, backLight.Z, 1.0f);
+
             Gl.Clear(ClearBufferMask.ColorBufferBit);
             Gl.Clear(ClearBufferMask.DepthBufferBit);
 
@@ -110,61 +139,19 @@ namespace lab3.source
             SetViewMatrix();
             SetProjectionMatrix();
 
+            SetLightStrength(lightStr.X, lightStr.Y, lightStr.Z);
             SetUniform3(LightColorVariableName, new Vector3(1f, 1f, 1f));
-            SetUniform3(LightPositionVariableName, new Vector3(0.0f, 0.0f, 2.0f));
+            SetUniform3(LightPositionVariableName, new Vector3(1.0f, 1.0f, 1.0f));
             SetUniform3(ViewPositionVariableName, new Vector3(camera.position.X, camera.position.Y, camera.position.Z));
             SetUniform1(ShinenessVariableName, shininess);
+            DrawCube();
 
-            DrawRects(Matrix4X4.CreateTranslation(0.0f, -1.0f, 0.0f), false);
-            DrawRects(Matrix4X4.CreateTranslation(0.0f, 1.0f, 0.0f), true);
-        }
 
-        private static unsafe void DrawRects(Matrix4X4<float> trans, bool enhanceNormals)
-        {
-            const float size = 0.25f;
-            const float length = 2 * size;
-            Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(size);
-            Matrix4X4<float> scaleMatrix = Matrix4X4.CreateScale(1.0f, 2.0f, 1.0f);
-            Matrix4X4<float> translation = Matrix4X4.CreateTranslation(-size, -size, 0);
-
-            Matrix4X4<float> rotationMatrix = Matrix4X4<float>.Identity;
-            Matrix4X4<float> rotationY = Matrix4X4.CreateRotationY(20 * degToRad);
-            modelMatrix *= scaleMatrix * translation * trans;
-
-            Matrix4X4<float> normalRotation = Matrix4X4<float>.Identity;
-
-            SetModelMatrix(modelMatrix);
-            SetNormalRotationMatrix(normalRotation);
-
-            Gl.BindVertexArray(rects[0].Vao);
-            Gl.BindBuffer(GLEnum.ElementArrayBuffer, rects[0].Indices);
-            Gl.DrawElements(GLEnum.Triangles, rects[0].IndexArrayLength, GLEnum.UnsignedInt, null);
-            Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
-            Gl.BindVertexArray(0);
-            //ImguiNet.Imgui
-            for (int i = 1; i < 18; i++)
-            {
-                translation = Matrix4X4.CreateTranslation(length, 0.0f, 0.0f);
-                modelMatrix *= translation * rotationY;
-                SetModelMatrix(modelMatrix);
-
-                if (enhanceNormals)
-                {
-                    normalRotation = Matrix4X4<float>.Identity * Matrix4X4.CreateRotationY(i * 10 * degToRad);
-                }
-                SetNormalRotationMatrix(normalRotation);
-
-                Gl.BindVertexArray(rects[i].Vao);
-                Gl.BindBuffer(GLEnum.ElementArrayBuffer, rects[i].Indices);
-                Gl.DrawElements(GLEnum.Triangles, rects[i].IndexArrayLength, GLEnum.UnsignedInt, null);
-                Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
-                Gl.BindVertexArray(0);
-            }
+            controller.Render();
         }
 
         private static unsafe void DrawCube()
         {
-            /*
             Matrix4X4<float> modelMatrix = Matrix4X4.CreateScale(0.5f);
 
             SetModelMatrix(modelMatrix);
@@ -174,15 +161,48 @@ namespace lab3.source
             Gl.DrawElements(GLEnum.Triangles, cube.IndexArrayLength, GLEnum.UnsignedInt, null);
             Gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
             Gl.BindVertexArray(0);
-            */
+        }
+
+        private static unsafe void SetLightStrength(float ambientStrength, float diffuseStrenth, float specularStrength)
+        {
+            int location = Gl.GetUniformLocation(program, LightStrenghtVectorName);
+            if (location == -1)
+            {
+                throw new Exception($"{LightStrenghtVectorName} uniform not found on shader.");
+            }
+
+            Gl.Uniform3(location, new Vector3(ambientStrength, diffuseStrenth, specularStrength));
+            CheckError();
         }
 
         private static unsafe void SetUpObjects()
         {
-            for (int i = 0; i < 18; i++)
+            float[] otherFaceColor = [1.0f, 0.0f, 0.0f, 1.0f];
+            switch(szinid)
             {
-                rects.Add(GlRectangle.CreateRect(Gl));
+                case 0:
+                    faceColor = new Vector3(1.0f, 0.0f, 0.0f);
+                    break;
+                case 1:
+                    faceColor = new Vector3(0.0f, 0.0f, 1.0f);
+                    break;
+                case 2:
+                    faceColor = new Vector3(0.0f, 1.0f, 0.0f);
+                    break;
+                case 3:
+                    faceColor = new Vector3(1.0f, 1.0f, 0.0f);
+                    break;
+                case 4:
+                    faceColor = new Vector3(1.0f, 0.37f, 0.08f);
+                    break;
+                case 5:
+                    faceColor = new Vector3(1.0f, 1.0f, 1.0f);
+                    break;
             }
+
+            Console.WriteLine(szinid);
+
+            cube = GlCube.CreateCubeWithFaceColors(Gl, otherFaceColor, faceColor, otherFaceColor, otherFaceColor, otherFaceColor, otherFaceColor);
         }
 
         private static unsafe void SetNormalRotationMatrix(Matrix4X4<float> normalRotation)
@@ -227,7 +247,7 @@ namespace lab3.source
             modelMatrixWithoutTranslation.M43 = 0;
             modelMatrixWithoutTranslation.M44 = 1;
 
-            
+
             Matrix4X4<float> modelInvers;
             Matrix4X4.Invert<float>(modelMatrixWithoutTranslation, out modelInvers);
             Matrix3X3<float> normalMatrix = new Matrix3X3<float>(Matrix4X4.Transpose(modelInvers));
@@ -273,6 +293,11 @@ namespace lab3.source
         private static void keyDown(IKeyboard keyboard, Key key, int arg3)
         {
             keyPressed = key;
+
+            if (key == Key.K)
+            {
+                stop = !stop;
+            }
         }
 
         private static void keyUp(IKeyboard keyboard, Key key, int arg3)
@@ -287,7 +312,7 @@ namespace lab3.source
         {
             uint vshader = Gl.CreateShader(ShaderType.VertexShader);
             uint fshader = Gl.CreateShader(ShaderType.FragmentShader);
-            
+
             if (!File.Exists(VertexShaderPath))
             {
                 throw new Exception("Vertex shader path does not exist!");
@@ -346,10 +371,7 @@ namespace lab3.source
         }
         private static void Window_Closing()
         {
-            rects.ForEach(rect =>
-            {
-                rect.ReleaseGlRect();
-            });
+            cube.ReleaseGlCube();
         }
     }
 }

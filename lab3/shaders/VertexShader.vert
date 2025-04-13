@@ -4,7 +4,6 @@ layout (location = 1) in vec4 vCol;
 layout (location = 2) in vec3 vNormal;
 
 uniform mat4 uModel;
-uniform mat4 uRotation;
 uniform mat3 uNormal;
 uniform mat4 uView;
 uniform mat4 uProjection;
@@ -18,5 +17,5 @@ void main()
 	outCol = vCol;
     outNormal = uNormal * vNormal;
     outWorldPosition = vec3(uModel * vec4(vPos.x, vPos.y, vPos.z, 1.0));
-    gl_Position = uProjection * uView * uRotation * uModel * vec4(vPos.x, vPos.y, vPos.z, 1.0);
+    gl_Position = uProjection * uView * uModel * vec4(vPos.x, vPos.y, vPos.z, 1.0);
 }

@@ -1,5 +1,6 @@
 ﻿using Silk.NET.Maths;
 using Silk.NET.OpenGL;
+using System.Numerics;
 
 namespace lab3.source
 {
@@ -56,7 +57,7 @@ namespace lab3.source
             return dirs;
         }
 
-        public static unsafe GlCube CreateCubeWithFaceColors(GL Gl, float[] face1Color, float[] face2Color, float[] face3Color, float[] face4Color, float[] face5Color, float[] face6Color)
+        public static unsafe GlCube CreateCubeWithFaceColors(GL Gl, float[] face1Color, Vector3 face2Color, float[] face3Color, float[] face4Color, float[] face5Color, float[] face6Color)
         {
             uint vao = Gl.GenVertexArray();
             Gl.BindVertexArray(vao);
@@ -99,37 +100,38 @@ namespace lab3.source
                 0.5f, -0.5f, 0.5f,1f, 0f, 0f,
             };
 
-            float[] colorArray = new float[] {
-                1.0f, 0.0f, 0.0f, 1.0f,
-                1.0f, 0.0f, 0.0f, 1.0f,
-                1.0f, 0.0f, 0.0f, 1.0f,
-                1.0f, 0.0f, 0.0f, 1.0f,
+            float[] cucc = [face2Color.X, face2Color.Y, face2Color.Z, 1.0f];
+            List<float> colorsList = new List<float>();
+            colorsList.AddRange(face1Color);
+            colorsList.AddRange(face1Color);
+            colorsList.AddRange(face1Color);
+            colorsList.AddRange(face1Color);
+            
+            colorsList.AddRange(cucc);
+            colorsList.AddRange(cucc);
+            colorsList.AddRange(cucc);
+            colorsList.AddRange(cucc);
+            
+            colorsList.AddRange(face3Color);
+            colorsList.AddRange(face3Color);
+            colorsList.AddRange(face3Color);
+            colorsList.AddRange(face3Color);
 
-                0.0f, 1.0f, 0.0f, 1.0f,
-                0.0f, 1.0f, 0.0f, 1.0f,
-                0.0f, 1.0f, 0.0f, 1.0f,
-                0.0f, 1.0f, 0.0f, 1.0f,
+            colorsList.AddRange(face4Color);
+            colorsList.AddRange(face4Color);
+            colorsList.AddRange(face4Color);
+            colorsList.AddRange(face4Color);
 
-                0.0f, 0.0f, 1.0f, 1.0f,
-                0.0f, 0.0f, 1.0f, 1.0f,
-                0.0f, 0.0f, 1.0f, 1.0f,
-                0.0f, 0.0f, 1.0f, 1.0f,
+            colorsList.AddRange(face5Color);
+            colorsList.AddRange(face5Color);
+            colorsList.AddRange(face5Color);
+            colorsList.AddRange(face5Color);
 
-                1.0f, 0.0f, 1.0f, 1.0f,
-                1.0f, 0.0f, 1.0f, 1.0f,
-                1.0f, 0.0f, 1.0f, 1.0f,
-                1.0f, 0.0f, 1.0f, 1.0f,
-
-                0.0f, 1.0f, 1.0f, 1.0f,
-                0.0f, 1.0f, 1.0f, 1.0f,
-                0.0f, 1.0f, 1.0f, 1.0f,
-                0.0f, 1.0f, 1.0f, 1.0f,
-
-                1.0f, 1.0f, 0.0f, 1.0f,
-                1.0f, 1.0f, 0.0f, 1.0f,
-                1.0f, 1.0f, 0.0f, 1.0f,
-                1.0f, 1.0f, 0.0f, 1.0f,
-            };
+            colorsList.AddRange(face6Color);
+            colorsList.AddRange(face6Color);
+            colorsList.AddRange(face6Color);
+            colorsList.AddRange(face6Color);
+            float[] colorArray = colorsList.ToArray();
 
             uint[] indexArray = new uint[] {
                 0, 1, 2,
