@@ -28,7 +28,6 @@ namespace lab2
         private static uint program;
 
         private static List<GlCube> glRubics;
-
         private const string ModelMatrixVariableName = "uModel";
         private const string RotationMatrixVariableName = "uRotation";
         private const string ViewMatrixVariableName = "uView";
