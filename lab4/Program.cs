@@ -384,6 +384,8 @@ namespace lab4
             float[] face6Color = [1.0f, 1.0f, 0.0f, 1.0f];
 
             teapot = ObjResourceReader.CreateTeapotWithColor(Gl, face1Color);
+            ColladaResourceReader reader = new ColladaResourceReader();
+
 
             float[] tableColor = [System.Drawing.Color.Azure.R/256f,
                                   System.Drawing.Color.Azure.G/256f,

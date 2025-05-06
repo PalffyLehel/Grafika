@@ -71,18 +71,6 @@ namespace lab4
             int k = 0;
             foreach (var objFace in objFaces)
             {
-                var aObjVertex = objVertices[objFace[0] - 1];
-                var a = new Vector3D<float>(aObjVertex[0], aObjVertex[1], aObjVertex[2]);
-                var bObjVertex = objVertices[objFace[1] - 1];
-                var b = new Vector3D<float>(bObjVertex[0], bObjVertex[1], bObjVertex[2]);
-                var cObjVertex = objVertices[objFace[2] - 1];
-                var c = new Vector3D<float>(cObjVertex[0], cObjVertex[1], cObjVertex[2]);
-                var dObjVertex = objVertices[objFace[3] - 1];
-                var d = new Vector3D<float>(dObjVertex[0], dObjVertex[1], dObjVertex[2]);
-
-                var normal1 = Vector3D.Normalize(Vector3D.Cross(b - a, c - a));
-                var normal2 = Vector3D.Normalize(Vector3D.Cross(d - a, b - a));
-
                 // process 3 vertices
                 for (int i = 0; i < 3; ++i)
                 {
@@ -149,12 +137,6 @@ namespace lab4
             objFaces = new List<int[]>();
             objNormals = new List<float[]>();
             objFNormals = new List<int[]>();
-
-            string[] names = typeof(ObjResourceReader).Assembly.GetManifestResourceNames();
-            foreach (var item in names)
-            {
-                Console.WriteLine(item);
-            }
 
             using (Stream objStream = File.OpenRead(objPath))
             using (StreamReader objReader = new StreamReader(objStream))
